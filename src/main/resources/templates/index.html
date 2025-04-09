@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目管理系统</title>
+    <link rel="stylesheet" href="//unpkg.com/element-plus/dist/index.css">
+    <script src="//unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="//unpkg.com/element-plus"></script>
+    <script src="//unpkg.com/@element-plus/icons-vue"></script>
+    <script src="//unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            min-width: 1200px;  /* 设置最小宽度 */
+        }
+        
+        .sidebar {
+            width: 200px;
+            background-color: #fff;
+            border-right: 1px solid #dcdfe6;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;  /* 防止侧边栏被压缩 */
+        }
+        
+        .sidebar-header {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #303133;
+            border-bottom: 1px solid #dcdfe6;
+        }
+        
+        .main-content {
+            flex: 1;
+            background-color: #f5f7fa;
+            padding: 20px;
+            overflow: auto;  /* 添加滚动条 */
+            min-width: 1000px;  /* 设置最小宽度 */
+        }
+        
+        .page-container {
+            background-color: #fff;
+            border-radius: 4px;
+            padding: 20px;
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .requirement-table {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .el-menu {
+            border-right: none !important;
+        }
+
+        .el-menu-item.is-active {
+            background-color: #ecf5ff !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- 左侧菜单 -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    项目管理系统
+                </div>
+                <el-menu
+                    :default-active="activeMenu"
+                    @select="handleMenuSelect">
+                    <el-menu-item index="requirements">
+                        <el-icon><Document /></el-icon>
+                        <span>项目需求管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="progress">
+                        <el-icon><Timer /></el-icon>
+                        <span>项目进度</span>
+                    </el-menu-item>
+                    <el-menu-item index="users">
+                        <el-icon><User /></el-icon>
+                        <span>用户管理</span>
+                    </el-menu-item>
+                </el-menu>
+            </div>
+
+            <!-- 主要内容区域 -->
+            <div class="main-content">
+                <div class="page-container">
+                    <!-- 需求管理页面 -->
+                    <div v-if="activeMenu === 'requirements'">
+                        <div class="header">
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <h2>需求管理</h2>
+                                </el-col>
+                                <el-col :span="12" style="text-align: right">
+                                    <el-button type="primary" @click="showAddDialog">新增需求</el-button>
+                                    <el-button @click="showFieldConfig">字段配置</el-button>
+                                    <el-button @click="showProjectConfig">项目配置</el-button>
+                                </el-col>
+                            </el-row>
+                        </div>
+
+                        <el-table 
+                            :data="requirements" 
+                            class="requirement-table" 
+                            border 
+                            v-loading="loading"
+                            element-loading-text="加载中..."
+                            element-loading-background="rgba(255, 255, 255, 0.7)">
+                            <template v-for="field in visibleFields" :key="field.prop">
+                                <el-table-column v-if="field.visible" 
+                                    :prop="field.prop" 
+                                    :label="field.label" 
+                                    :width="field.width">
+                                    <template #default="scope" v-if="field.type === 'tag'">
+                                        <el-tag :type="getTagType(scope.row[field.prop], field.prop)">
+                                            {{ scope.row[field.prop] }}
+                                        </el-tag>
+                                    </template>
+                                </el-table-column>
+                            </template>
+                            <el-table-column label="操作" width="150" fixed="right">
+                                <template #default="scope">
+                                    <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                                    <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+
+                    <!-- 项目进度页面 -->
+                    <div v-if="activeMenu === 'progress'">
+                        <div class="header">
+                            <h2>项目进度</h2>
+                        </div>
+                        <el-empty description="项目进度功能开发中..."></el-empty>
+                    </div>
+
+                    <!-- 用户管理页面 -->
+                    <div v-if="activeMenu === 'users'">
+                        <div class="header">
+                            <h2>用户管理</h2>
+                        </div>
+                        <el-empty description="用户管理功能开发中..."></el-empty>
+                    </div>
+
+                    <!-- 需求表单对话框 -->
+                    <el-dialog v-model="dialogVisible" :title="dialogTitle" @close="handleDialogClose">
+                        <el-form :model="currentRequirement" label-width="120px" :rules="rules" ref="requirementForm">
+                            <template v-for="field in formFields" :key="field.prop">
+                                <el-form-item :label="field.label" :prop="field.prop" v-if="field.visible">
+                                    <!-- 输入框 -->
+                                    <el-input v-if="field.type === 'input'" 
+                                        v-model="currentRequirement[field.prop]"
+                                        :type="field.inputType || 'text'">
+                                    </el-input>
+                                    
+                                    <!-- 文本域 -->
+                                    <el-input v-if="field.type === 'textarea'" 
+                                        type="textarea" 
+                                        v-model="currentRequirement[field.prop]" 
+                                        :rows="4">
+                                    </el-input>
+                                    
+                                    <!-- 下拉选择 -->
+                                    <el-select v-if="field.type === 'select'" 
+                                        v-model="currentRequirement[field.prop]" 
+                                        style="width: 100%">
+                                        <el-option v-for="option in field.options" 
+                                            :key="option.value" 
+                                            :label="option.label" 
+                                            :value="option.value">
+                                        </el-option>
+                                    </el-select>
+                                    
+                                    <!-- 日期选择 -->
+                                    <el-date-picker v-if="field.type === 'date'" 
+                                        v-model="currentRequirement[field.prop]" 
+                                        type="date" 
+                                        style="width: 100%">
+                                    </el-date-picker>
+                                </el-form-item>
+                            </template>
+                        </el-form>
+                        <template #footer>
+                            <span class="dialog-footer">
+                                <el-button @click="dialogVisible = false">取消</el-button>
+                                <el-button type="primary" @click="handleSave" :loading="saving">确定</el-button>
+                            </span>
+                        </template>
+                    </el-dialog>
+
+                    <!-- 字段配置对话框 -->
+                    <el-dialog v-model="fieldConfigVisible" title="字段配置" width="70%">
+                        <div style="margin-bottom: 20px">
+                            <el-button type="primary" @click="showAddFieldDialog">新增字段</el-button>
+                        </div>
+                        <el-table :data="formFields" border>
+                            <el-table-column prop="label" label="字段名称" width="150"></el-table-column>
+                            <el-table-column prop="prop" label="字段标识" width="150"></el-table-column>
+                            <el-table-column prop="type" label="字段类型" width="120">
+                                <template #default="scope">
+                                    <el-tag>{{ scope.row.type }}</el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="width" label="列宽" width="100">
+                                <template #default="scope">
+                                    <el-input-number v-model="scope.row.width" :min="80" :max="400" size="small"></el-input-number>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="visible" label="是否显示" width="100">
+                                <template #default="scope">
+                                    <el-switch v-model="scope.row.visible"></el-switch>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="required" label="是否必填" width="100">
+                                <template #default="scope">
+                                    <el-switch v-model="scope.row.required"></el-switch>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="排序" width="120">
+                                <template #default="scope">
+                                    <el-button-group>
+                                        <el-button size="small" @click="moveField(scope.$index, -1)" :disabled="scope.$index === 0">
+                                            上移
+                                        </el-button>
+                                        <el-button size="small" @click="moveField(scope.$index, 1)" :disabled="scope.$index === formFields.length - 1">
+                                            下移
+                                        </el-button>
+                                    </el-button-group>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" width="100">
+                                <template #default="scope">
+                                    <el-button size="small" type="danger" @click="deleteField(scope.$index)" :disabled="scope.row.system">删除</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <template #footer>
+                            <span class="dialog-footer">
+                                <el-button @click="fieldConfigVisible = false">取消</el-button>
+                                <el-button type="primary" @click="saveFieldConfig">保存配置</el-button>
+                            </span>
+                        </template>
+                    </el-dialog>
+
+                    <!-- 新增字段对话框 -->
+                    <el-dialog v-model="addFieldDialogVisible" title="新增字段" width="500px">
+                        <el-form :model="newField" label-width="100px" :rules="fieldRules" ref="fieldForm">
+                            <el-form-item label="字段名称" prop="label">
+                                <el-input v-model="newField.label" placeholder="请输入字段名称"></el-input>
+                            </el-form-item>
+                            <el-form-item label="字段标识" prop="prop">
+                                <el-input v-model="newField.prop" placeholder="请输入字段标识（英文）"></el-input>
+                            </el-form-item>
+                            <el-form-item label="字段类型" prop="type">
+                                <el-select v-model="newField.type" placeholder="请选择字段类型" style="width: 100%">
+                                    <el-option label="输入框" value="input"></el-option>
+                                    <el-option label="文本域" value="textarea"></el-option>
+                                    <el-option label="下拉选择" value="select"></el-option>
+                                    <el-option label="日期选择" value="date"></el-option>
+                                    <el-option label="标签" value="tag"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="列宽" prop="width">
+                                <el-input-number v-model="newField.width" :min="80" :max="400"></el-input-number>
+                            </el-form-item>
+                            <el-form-item label="是否显示">
+                                <el-switch v-model="newField.visible"></el-switch>
+                            </el-form-item>
+                            <el-form-item label="是否必填">
+                                <el-switch v-model="newField.required"></el-switch>
+                            </el-form-item>
+                            <el-form-item label="选项" v-if="newField.type === 'select'">
+                                <div v-for="(option, index) in newField.options" :key="index" style="display: flex; margin-bottom: 10px;">
+                                    <el-input v-model="option.label" placeholder="选项名称" style="margin-right: 10px;"></el-input>
+                                    <el-input v-model="option.value" placeholder="选项值"></el-input>
+                                    <el-button type="danger" @click="removeOption(index)" style="margin-left: 10px;">删除</el-button>
+                                </div>
+                                <el-button type="primary" @click="addOption">添加选项</el-button>
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <span class="dialog-footer">
+                                <el-button @click="addFieldDialogVisible = false">取消</el-button>
+                                <el-button type="primary" @click="handleAddField">确定</el-button>
+                            </span>
+                        </template>
+                    </el-dialog>
+
+                    <!-- 项目配置对话框 -->
+                    <el-dialog v-model="projectConfigVisible" title="项目配置" width="500px">
+                        <div style="margin-bottom: 20px">
+                            <el-button type="primary" @click="addProject">新增项目</el-button>
+                        </div>
+                        <el-table :data="projectList" border>
+                            <el-table-column prop="name" label="项目名称">
+                                <template #default="scope">
+                                    <el-input v-model="scope.row.name" placeholder="请输入项目名称" v-if="scope.row.editing"></el-input>
+                                    <span v-else>{{ scope.row.name }}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" width="200">
+                                <template #default="scope">
+                                    <el-button-group v-if="!scope.row.editing">
+                                        <el-button size="small" @click="editProject(scope.row)">编辑</el-button>
+                                        <el-button size="small" type="danger" @click="deleteProject(scope.$index)">删除</el-button>
+                                    </el-button-group>
+                                    <el-button-group v-else>
+                                        <el-button size="small" type="primary" @click="saveProject(scope.row)">保存</el-button>
+                                        <el-button size="small" @click="cancelEdit(scope.row)">取消</el-button>
+                                    </el-button-group>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-dialog>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+        const app = createApp({
+            setup() {
+                // 菜单相关
+                const activeMenu = ref('requirements');
+                const handleMenuSelect = (index) => {
+                    activeMenu.value = index;
+                };
+
+                const defaultFields = [
+                    {
+                        label: '项目名称',
+                        prop: 'projectName',
+                        type: 'select',
+                        width: 150,
+                        visible: true,
+                        required: true,
+                        options: computed(() => projectList.value.map(project => ({
+                            label: project.name,
+                            value: project.name
+                        }))),
+                        system: true
+                    },
+                    {
+                        label: '需求',
+                        prop: 'description',
+                        type: 'input',
+                        width: 180,
+                        visible: true,
+                        required: true,
+                        order: 2
+                    },
+                    {
+                        label: '需求详细描述',
+                        prop: 'details',
+                        type: 'textarea',
+                        width: 300,
+                        visible: true,
+                        required: false,
+                        order: 3
+                    },
+                    {
+                        label: '需求提出人',
+                        prop: 'assignee',
+                        type: 'select',
+                        width: 120,
+                        visible: true,
+                        required: true,
+                        order: 4,
+                        options: [
+                            { label: '宇航', value: '宇航' },
+                            { label: '国涛', value: '国涛' },
+                            { label: 'mia', value: 'mia' },
+                            { label: '老杨', value: '老杨' },
+                            { label: '大金', value: '大金' },
+                            { label: '谢总', value: '谢总' },
+                            { label: '赵磊', value: '赵磊' }
+                        ]
+                    },
+                    {
+                        label: '需求状态',
+                        prop: 'status',
+                        type: 'select',
+                        width: 120,
+                        visible: true,
+                        required: true,
+                        order: 5,
+                        options: [
+                            { label: '未开发', value: '未开发' },
+                            { label: '方案设计中', value: '方案设计中' },
+                            { label: '开发中', value: '开发中' },
+                            { label: '待测试', value: '待测试' },
+                            { label: '测试中', value: '测试中' },
+                            { label: '完成', value: '完成' }
+                        ]
+                    },
+                    {
+                        label: '优先级',
+                        prop: 'priority',
+                        type: 'select',
+                        width: 100,
+                        visible: true,
+                        required: true,
+                        order: 6,
+                        options: [
+                            { label: '高', value: '高' },
+                            { label: '中', value: '中' },
+                            { label: '低', value: '低' }
+                        ]
+                    },
+                    {
+                        label: '提出日期',
+                        prop: 'dueDate',
+                        type: 'date',
+                        width: 120,
+                        visible: true,
+                        required: true,
+                        order: 7
+                    },
+                    {
+                        label: '预计完成时间',
+                        prop: 'estimatedCompletionDate',
+                        type: 'date',
+                        width: 120,
+                        visible: true,
+                        required: false,
+                        order: 8
+                    }
+                ];
+
+                const formFields = ref(JSON.parse(localStorage.getItem('fieldConfig')) || defaultFields);
+                const fieldConfigVisible = ref(false);
+                const requirements = ref([]);
+                const dialogVisible = ref(false);
+                const dialogTitle = ref('');
+                const currentRequirement = ref({});
+                const loading = ref(false);
+                const saving = ref(false);
+                const requirementForm = ref(null);
+
+                const visibleFields = computed(() => {
+                    return formFields.value
+                        .filter(field => field.visible)
+                        .sort((a, b) => a.order - b.order);
+                });
+
+                const rules = computed(() => {
+                    const result = {};
+                    formFields.value.forEach(field => {
+                        if (field.required) {
+                            result[field.prop] = [{
+                                required: true,
+                                message: `请${field.type === 'select' ? '选择' : '输入'}${field.label}`,
+                                trigger: field.type === 'select' ? 'change' : 'blur'
+                            }];
+                        }
+                    });
+                    return result;
+                });
+
+                const loadRequirements = async () => {
+                    try {
+                        loading.value = true;
+                        const response = await axios.get('/api/requirements');
+                        requirements.value = response.data;
+                    } catch (error) {
+                        console.error('Error loading requirements:', error);
+                        ElMessage.error('加载需求列表失败');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                // 添加定时刷新功能
+                let refreshTimer = null;
+                const startAutoRefresh = () => {
+                    refreshTimer = setInterval(loadRequirements, 5000); // 每5秒刷新一次
+                };
+                
+                const stopAutoRefresh = () => {
+                    if (refreshTimer) {
+                        clearInterval(refreshTimer);
+                        refreshTimer = null;
+                    }
+                };
+
+                // 组件挂载时启动自动刷新
+                onMounted(() => {
+                    loadRequirements();
+                    startAutoRefresh();
+                });
+
+                // 组件卸载时停止自动刷新
+                onUnmounted(() => {
+                    stopAutoRefresh();
+                });
+
+                const showAddDialog = () => {
+                    const defaultValues = {
+                        assignee: '宇航',
+                        status: '未开发',
+                        priority: '中',
+                        dueDate: new Date()
+                    };
+                    
+                    currentRequirement.value = formFields.value.reduce((acc, field) => {
+                        acc[field.prop] = defaultValues[field.prop] || '';
+                        return acc;
+                    }, {});
+                    
+                    dialogTitle.value = '新增需求';
+                    dialogVisible.value = true;
+                };
+
+                const handleEdit = (row) => {
+                    currentRequirement.value = { ...row };
+                    dialogTitle.value = '编辑需求';
+                    dialogVisible.value = true;
+                };
+
+                const handleDelete = async (row) => {
+                    try {
+                        await ElMessageBox.confirm('确认删除该需求？', '提示', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'warning'
+                        });
+                        loading.value = true;
+                        await axios.delete(`/api/requirements/${row.id}`);
+                        ElMessage.success('删除成功');
+                        await loadRequirements();
+                    } catch (error) {
+                        if (error !== 'cancel') {
+                            console.error('Error deleting requirement:', error);
+                            ElMessage.error('删除需求失败');
+                        }
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const handleSave = async () => {
+                    if (!requirementForm.value) return;
+                    
+                    try {
+                        await requirementForm.value.validate();
+                        saving.value = true;
+                        
+                        if (currentRequirement.value.id) {
+                            await axios.put(`/api/requirements/${currentRequirement.value.id}`, currentRequirement.value);
+                        } else {
+                            await axios.post('/api/requirements', currentRequirement.value);
+                        }
+                        
+                        dialogVisible.value = false;
+                        ElMessage.success('保存成功');
+                        await loadRequirements(); // 立即刷新数据
+                    } catch (error) {
+                        if (error.name === 'ValidationError') {
+                            return;
+                        }
+                        console.error('Error saving requirement:', error);
+                        ElMessage.error('保存需求失败');
+                    } finally {
+                        saving.value = false;
+                    }
+                };
+
+                const handleDialogClose = () => {
+                    if (requirementForm.value) {
+                        requirementForm.value.resetFields();
+                    }
+                };
+
+                const getTagType = (value, prop) => {
+                    const types = {
+                        status: {
+                            '未开发': 'info',
+                            '方案设计中': 'warning',
+                            '开发中': 'primary',
+                            '待测试': 'warning',
+                            '测试中': 'warning',
+                            '完成': 'success'
+                        },
+                        priority: {
+                            '高': 'danger',
+                            '中': 'warning',
+                            '低': 'info'
+                        }
+                    };
+                    return types[prop]?.[value] || 'info';
+                };
+
+                const showFieldConfig = () => {
+                    fieldConfigVisible.value = true;
+                };
+
+                const moveField = (index, direction) => {
+                    const newIndex = index + direction;
+                    if (newIndex < 0 || newIndex >= formFields.value.length) return;
+                    
+                    const temp = formFields.value[index].order;
+                    formFields.value[index].order = formFields.value[newIndex].order;
+                    formFields.value[newIndex].order = temp;
+                    
+                    formFields.value.sort((a, b) => a.order - b.order);
+                };
+
+                const saveFieldConfig = () => {
+                    localStorage.setItem('fieldConfig', JSON.stringify(formFields.value));
+                    fieldConfigVisible.value = false;
+                    ElMessage.success('配置保存成功');
+                };
+
+                // 新增字段相关
+                const addFieldDialogVisible = ref(false);
+                const newField = ref({
+                    label: '',
+                    prop: '',
+                    type: 'input',
+                    width: 150,
+                    visible: true,
+                    required: false,
+                    options: [],
+                    system: false
+                });
+
+                const fieldRules = {
+                    label: [
+                        { required: true, message: '请输入字段名称', trigger: 'blur' },
+                        { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+                    ],
+                    prop: [
+                        { required: true, message: '请输入字段标识', trigger: 'blur' },
+                        { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: '字段标识必须以字母开头，只能包含字母、数字和下划线', trigger: 'blur' }
+                    ],
+                    type: [
+                        { required: true, message: '请选择字段类型', trigger: 'change' }
+                    ]
+                };
+
+                const fieldForm = ref(null);
+
+                const showAddFieldDialog = () => {
+                    newField.value = {
+                        label: '',
+                        prop: '',
+                        type: 'input',
+                        width: 150,
+                        visible: true,
+                        required: false,
+                        options: [],
+                        system: false
+                    };
+                    addFieldDialogVisible.value = true;
+                };
+
+                const handleAddField = async () => {
+                    if (!fieldForm.value) return;
+                    
+                    await fieldForm.value.validate((valid) => {
+                        if (valid) {
+                            // 检查字段标识是否重复
+                            const isDuplicate = formFields.value.some(field => field.prop === newField.value.prop);
+                            if (isDuplicate) {
+                                ElMessage.error('字段标识已存在，请使用其他标识');
+                                return;
+                            }
+
+                            // 添加新字段
+                            formFields.value.push({
+                                ...newField.value,
+                                options: newField.value.type === 'select' ? [...newField.value.options] : []
+                            });
+
+                            // 更新本地存储
+                            localStorage.setItem('formFields', JSON.stringify(formFields.value));
+                            
+                            addFieldDialogVisible.value = false;
+                            ElMessage.success('添加字段成功');
+                        }
+                    });
+                };
+
+                const deleteField = (index) => {
+                    ElMessageBox.confirm('确认删除该字段吗？删除后不可恢复', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        formFields.value.splice(index, 1);
+                        localStorage.setItem('formFields', JSON.stringify(formFields.value));
+                        ElMessage.success('删除成功');
+                    }).catch(() => {});
+                };
+
+                const addOption = () => {
+                    newField.value.options.push({
+                        label: '',
+                        value: ''
+                    });
+                };
+
+                const removeOption = (index) => {
+                    newField.value.options.splice(index, 1);
+                };
+
+                // 项目配置相关
+                const projectConfigVisible = ref(false);
+                const projectList = ref([]);
+
+                // 从localStorage加载项目列表
+                const loadProjectList = () => {
+                    const savedProjects = localStorage.getItem('projectList');
+                    if (savedProjects) {
+                        projectList.value = JSON.parse(savedProjects);
+                    }
+                };
+
+                // 初始化时加载项目列表
+                loadProjectList();
+
+                // 显示项目配置对话框
+                const showProjectConfig = () => {
+                    projectConfigVisible.value = true;
+                };
+
+                // 新增项目
+                const addProject = () => {
+                    projectList.value.push({
+                        name: '',
+                        editing: true,
+                        tempName: ''
+                    });
+                };
+
+                // 编辑项目
+                const editProject = (project) => {
+                    project.tempName = project.name;
+                    project.editing = true;
+                };
+
+                // 保存项目
+                const saveProject = (project) => {
+                    if (!project.name.trim()) {
+                        ElMessage.error('项目名称不能为空');
+                        return;
+                    }
+                    
+                    // 检查是否重复
+                    const isDuplicate = projectList.value.some(p => 
+                        p !== project && p.name === project.name.trim()
+                    );
+                    
+                    if (isDuplicate) {
+                        ElMessage.error('项目名称已存在');
+                        return;
+                    }
+
+                    project.name = project.name.trim();
+                    project.editing = false;
+                    localStorage.setItem('projectList', JSON.stringify(projectList.value));
+                    ElMessage.success('保存成功');
+                };
+
+                // 取消编辑
+                const cancelEdit = (project) => {
+                    if (!project.tempName) {
+                        // 如果是新增的项目，直接删除
+                        const index = projectList.value.indexOf(project);
+                        if (index > -1) {
+                            projectList.value.splice(index, 1);
+                        }
+                    } else {
+                        // 如果是编辑现有项目，恢复原值
+                        project.name = project.tempName;
+                        project.editing = false;
+                    }
+                };
+
+                // 删除项目
+                const deleteProject = (index) => {
+                    ElMessageBox.confirm('确认删除该项目吗？删除后不可恢复', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        projectList.value.splice(index, 1);
+                        localStorage.setItem('projectList', JSON.stringify(projectList.value));
+                        ElMessage.success('删除成功');
+                    }).catch(() => {});
+                };
+
+                return {
+                    activeMenu,
+                    handleMenuSelect,
+                    requirements,
+                    dialogVisible,
+                    dialogTitle,
+                    currentRequirement,
+                    loading,
+                    saving,
+                    requirementForm,
+                    rules,
+                    formFields,
+                    visibleFields,
+                    fieldConfigVisible,
+                    showAddDialog,
+                    handleEdit,
+                    handleDelete,
+                    handleSave,
+                    handleDialogClose,
+                    getTagType,
+                    showFieldConfig,
+                    moveField,
+                    saveFieldConfig,
+                    addFieldDialogVisible,
+                    newField,
+                    fieldRules,
+                    fieldForm,
+                    showAddFieldDialog,
+                    handleAddField,
+                    deleteField,
+                    addOption,
+                    removeOption,
+                    projectConfigVisible,
+                    projectList,
+                    showProjectConfig,
+                    addProject,
+                    editProject,
+                    saveProject,
+                    cancelEdit,
+                    deleteProject
+                };
+            }
+        });
+
+        // 注册必要的图标组件
+        const { Document, Timer, User } = ElementPlusIconsVue;
+        app.component('Document', Document);
+        app.component('Timer', Timer);
+        app.component('User', User);
+
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+</body>
+</html> 
