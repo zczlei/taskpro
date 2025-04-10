@@ -101,15 +101,15 @@
             width="60%"
           >
             <div class="requirements-detail">
-              <h3>{{ selectedProject.name }}</h3>
+              <h3>{{ selectedProject.projectName }}</h3>
               <div class="detail-item">
                 <label>需求概述：</label>
-                <p>{{ selectedProject.requirements }}</p>
+                <p>{{ selectedProject.description }}</p>
               </div>
               <div class="detail-item">
                 <label>详细描述：</label>
                 <div class="detail-content">
-                  {{ selectedProject.requirementsDetail || '暂无详细描述' }}
+                  {{ selectedProject.details || '暂无详细描述' }}
                 </div>
               </div>
               <div class="detail-item">
@@ -272,9 +272,9 @@ const saveLoading = ref(false)
 const editFormRef = ref(null)
 const selectedProject = ref<Project>({
   id: 0,
-  name: '',
-  requirements: '',
-  requirementsDetail: '',
+  projectName: '',
+  description: '',
+  details: '',
   status: '',
   developer: '',
   estimatedTime: '',
