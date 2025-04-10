@@ -1,230 +1,232 @@
 <template>
-  <div class="app-container">
-    <!-- 左侧菜单 -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        项目管理系统
+  <MainLayout>
+    <div class="app-container">
+      <!-- 左侧菜单 -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <!-- 移除这里的标题文字 -->
+        </div>
+        <el-menu default-active="/personal-tasks" router>
+          <el-menu-item index="/">
+            <el-icon><Document /></el-icon>
+            <span>项目需求</span>
+          </el-menu-item>
+          <el-menu-item index="/personal-tasks">
+            <el-icon><List /></el-icon>
+            <span>个人任务</span>
+          </el-menu-item>
+          <el-menu-item index="progress">
+            <el-icon><Timer /></el-icon>
+            <span>项目进度</span>
+          </el-menu-item>
+          <el-menu-item index="/account">
+            <el-icon><User /></el-icon>
+            <span>账号管理</span>
+          </el-menu-item>
+        </el-menu>
       </div>
-      <el-menu default-active="/personal-tasks" router>
-        <el-menu-item index="/">
-          <el-icon><Document /></el-icon>
-          <span>项目需求</span>
-        </el-menu-item>
-        <el-menu-item index="/personal-tasks">
-          <el-icon><List /></el-icon>
-          <span>个人任务</span>
-        </el-menu-item>
-        <el-menu-item index="progress">
-          <el-icon><Timer /></el-icon>
-          <span>项目进度</span>
-        </el-menu-item>
-        <el-menu-item index="/account">
-          <el-icon><User /></el-icon>
-          <span>账号管理</span>
-        </el-menu-item>
-      </el-menu>
-    </div>
 
-    <!-- 主要内容区域 -->
-    <div class="main-content">
-      <div class="page-container">
-        <div class="personal-tasks-page">
-          <div class="header">
-            <h2>个人任务</h2>
-            <div class="actions">
-              <el-button type="primary" @click="showGlobalAddDialog">添加任务</el-button>
-            </div>
-          </div>
-
-          <div class="kanban-container">
-            <!-- 待办事项 -->
-            <div class="kanban-column">
-              <div class="column-header">
-                <h3>待办事项 ({{ pendingTasks.length }})</h3>
+      <!-- 主要内容区域 -->
+      <div class="main-content">
+        <div class="page-container">
+          <div class="personal-tasks-page">
+            <div class="header">
+              <h2>个人任务</h2>
+              <div class="actions">
+                <el-button type="primary" @click="showGlobalAddDialog">添加任务</el-button>
               </div>
-              <div class="task-list">
-                <div v-for="task in pendingTasks" :key="task.id" class="task-card">
-                  <div class="task-content">
-                    <div class="task-title">{{ task.name }}</div>
-                    <div class="task-description">{{ task.description }}</div>
-                    <div v-if="task.imagePath" class="task-image">
-                      <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
-                    </div>
-                    <div class="task-meta">
-                      <el-tag :type="getPriorityType(task.priority)" size="small">
-                        {{ getPriorityLabel(task.priority) }}
-                      </el-tag>
-                      <div class="create-date">
-                        创建于: {{ formatDate(task.createdAt) }}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="task-actions">
-                    <el-button type="primary" link @click="handleEdit(task)">编辑</el-button>
-                    <el-button type="success" link @click="handleStart(task)">开始处理</el-button>
-                    <el-button type="danger" link @click="handleDelete(task)">删除</el-button>
-                  </div>
+            </div>
+
+            <div class="kanban-container">
+              <!-- 待办事项 -->
+              <div class="kanban-column">
+                <div class="column-header">
+                  <h3>待办事项 ({{ pendingTasks.length }})</h3>
                 </div>
-                <el-button class="add-card-btn" text @click="showAddDialog('PENDING')">
-                  <el-icon><Plus /></el-icon> 添加卡片
-                </el-button>
-              </div>
-            </div>
-
-            <!-- 正在处理的事项 -->
-            <div class="kanban-column">
-              <div class="column-header">
-                <h3>正在处理的事项 ({{ inProgressTasks.length }})</h3>
-              </div>
-              <div class="task-list">
-                <div v-for="task in inProgressTasks" :key="task.id" class="task-card">
-                  <div class="task-content">
-                    <div class="task-title">{{ task.name }}</div>
-                    <div class="task-description">{{ task.description }}</div>
-                    <div v-if="task.imagePath" class="task-image">
-                      <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
-                    </div>
-                    <div class="task-meta">
-                      <el-tag :type="getPriorityType(task.priority)" size="small">
-                        {{ getPriorityLabel(task.priority) }}
-                      </el-tag>
-                      <div class="create-date">
-                        创建于: {{ formatDate(task.createdAt) }}
+                <div class="task-list">
+                  <div v-for="task in pendingTasks" :key="task.id" class="task-card">
+                    <div class="task-content">
+                      <div class="task-title">{{ task.name }}</div>
+                      <div class="task-description">{{ task.description }}</div>
+                      <div v-if="task.imagePath" class="task-image">
+                        <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
+                      </div>
+                      <div class="task-meta">
+                        <el-tag :type="getPriorityType(task.priority)" size="small">
+                          {{ getPriorityLabel(task.priority) }}
+                        </el-tag>
+                        <div class="create-date">
+                          创建于: {{ formatDate(task.createdAt) }}
+                        </div>
                       </div>
                     </div>
+                    <div class="task-actions">
+                      <el-button type="primary" link @click="handleEdit(task)">编辑</el-button>
+                      <el-button type="success" link @click="handleStart(task)">开始处理</el-button>
+                      <el-button type="danger" link @click="handleDelete(task)">删除</el-button>
+                    </div>
                   </div>
-                  <div class="task-actions">
-                    <el-button type="primary" link @click="handleEdit(task)">编辑</el-button>
-                    <el-button type="success" link @click="handleComplete(task)">完成</el-button>
-                    <el-button type="danger" link @click="handleDelete(task)">删除</el-button>
-                  </div>
+                  <el-button class="add-card-btn" text @click="showAddDialog('PENDING')">
+                    <el-icon><Plus /></el-icon> 添加卡片
+                  </el-button>
                 </div>
-                <el-button class="add-card-btn" text @click="showAddDialog('IN_PROGRESS')">
-                  <el-icon><Plus /></el-icon> 添加卡片
-                </el-button>
               </div>
-            </div>
 
-            <!-- 已完成的事项 -->
-            <div class="kanban-column">
-              <div class="column-header">
-                <h3>已完成的事项 ({{ completedTasks.length }})</h3>
-              </div>
-              <div class="task-list">
-                <div v-for="task in completedTasks" :key="task.id" class="task-card">
-                  <div class="task-content">
-                    <div class="task-title">{{ task.name }}</div>
-                    <div class="task-description">{{ task.description }}</div>
-                    <div v-if="task.imagePath" class="task-image">
-                      <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
-                    </div>
-                    <div class="task-meta">
-                      <el-tag :type="getPriorityType(task.priority)" size="small">
-                        {{ getPriorityLabel(task.priority) }}
-                      </el-tag>
-                      <div class="create-date">
-                        创建于: {{ formatDate(task.createdAt) }}
-                      </div>
-                      <div class="completion-info">
-                        <el-icon><Check /></el-icon>
-                        {{ task.completedAt }}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="task-actions">
-                    <el-button type="primary" link @click="handleReopen(task)">重新打开</el-button>
-                    <el-button type="danger" link @click="handleDelete(task)">删除</el-button>
-                  </div>
+              <!-- 正在处理的事项 -->
+              <div class="kanban-column">
+                <div class="column-header">
+                  <h3>正在处理的事项 ({{ inProgressTasks.length }})</h3>
                 </div>
-                <el-button class="add-card-btn" text @click="showAddDialog('COMPLETED')">
-                  <el-icon><Plus /></el-icon> 添加卡片
-                </el-button>
+                <div class="task-list">
+                  <div v-for="task in inProgressTasks" :key="task.id" class="task-card">
+                    <div class="task-content">
+                      <div class="task-title">{{ task.name }}</div>
+                      <div class="task-description">{{ task.description }}</div>
+                      <div v-if="task.imagePath" class="task-image">
+                        <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
+                      </div>
+                      <div class="task-meta">
+                        <el-tag :type="getPriorityType(task.priority)" size="small">
+                          {{ getPriorityLabel(task.priority) }}
+                        </el-tag>
+                        <div class="create-date">
+                          创建于: {{ formatDate(task.createdAt) }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="task-actions">
+                      <el-button type="primary" link @click="handleEdit(task)">编辑</el-button>
+                      <el-button type="success" link @click="handleComplete(task)">完成</el-button>
+                      <el-button type="danger" link @click="handleDelete(task)">删除</el-button>
+                    </div>
+                  </div>
+                  <el-button class="add-card-btn" text @click="showAddDialog('IN_PROGRESS')">
+                    <el-icon><Plus /></el-icon> 添加卡片
+                  </el-button>
+                </div>
+              </div>
+
+              <!-- 已完成的事项 -->
+              <div class="kanban-column">
+                <div class="column-header">
+                  <h3>已完成的事项 ({{ completedTasks.length }})</h3>
+                </div>
+                <div class="task-list">
+                  <div v-for="task in completedTasks" :key="task.id" class="task-card">
+                    <div class="task-content">
+                      <div class="task-title">{{ task.name }}</div>
+                      <div class="task-description">{{ task.description }}</div>
+                      <div v-if="task.imagePath" class="task-image">
+                        <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
+                      </div>
+                      <div class="task-meta">
+                        <el-tag :type="getPriorityType(task.priority)" size="small">
+                          {{ getPriorityLabel(task.priority) }}
+                        </el-tag>
+                        <div class="create-date">
+                          创建于: {{ formatDate(task.createdAt) }}
+                        </div>
+                        <div class="completion-info">
+                          <el-icon><Check /></el-icon>
+                          {{ task.completedAt }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="task-actions">
+                      <el-button type="primary" link @click="handleReopen(task)">重新打开</el-button>
+                      <el-button type="danger" link @click="handleDelete(task)">删除</el-button>
+                    </div>
+                  </div>
+                  <el-button class="add-card-btn" text @click="showAddDialog('COMPLETED')">
+                    <el-icon><Plus /></el-icon> 添加卡片
+                  </el-button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- 新增/编辑对话框 -->
-          <el-dialog
-            v-model="dialogVisible"
-            :title="dialogTitle"
-            width="500px"
-          >
-            <el-form
-              ref="taskFormRef"
-              :model="taskForm"
-              :rules="rules"
-              label-width="100px"
+            <!-- 新增/编辑对话框 -->
+            <el-dialog
+              v-model="dialogVisible"
+              :title="dialogTitle"
+              width="500px"
             >
-              <el-form-item label="任务名称" prop="name">
-                <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
-              </el-form-item>
-              <el-form-item label="任务描述" prop="description">
-                <el-input 
-                  v-model="taskForm.description" 
-                  type="textarea"
-                  :rows="3"
-                  placeholder="请输入任务描述"
-                />
-              </el-form-item>
-              <el-form-item label="任务图片">
-                <el-upload
-                  class="task-image-upload"
-                  action="/api/files/upload"
-                  :on-success="handleUploadSuccess"
-                  :on-error="handleUploadError"
-                  :before-upload="beforeUpload"
-                  :limit="1"
-                  list-type="picture-card"
-                  :file-list="fileList"
-                >
-                  <el-icon><Plus /></el-icon>
-                </el-upload>
-              </el-form-item>
-              <el-form-item label="任务状态" prop="status">
-                <el-select 
-                  v-model="taskForm.status" 
-                  placeholder="请选择任务状态"
-                  :disabled="!isGlobalAdd"
-                >
-                  <el-option label="待办事项" value="PENDING" />
-                  <el-option label="正在处理的事项" value="IN_PROGRESS" />
-                  <el-option label="已完成的事项" value="COMPLETED" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="优先级" prop="priority">
-                <el-select v-model="taskForm.priority" placeholder="请选择优先级" style="width: 100%">
-                  <el-option label="低" value="LOW" />
-                  <el-option label="中" value="MEDIUM" />
-                  <el-option label="高" value="HIGH" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="截止日期" prop="dueDate">
-                <el-date-picker
-                  v-model="taskForm.dueDate"
-                  type="date"
-                  placeholder="请选择截止日期"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <div class="dialog-footer">
-                <el-button @click="dialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleSave">确定</el-button>
-              </div>
-            </template>
-          </el-dialog>
+              <el-form
+                ref="taskFormRef"
+                :model="taskForm"
+                :rules="rules"
+                label-width="100px"
+              >
+                <el-form-item label="任务名称" prop="name">
+                  <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
+                </el-form-item>
+                <el-form-item label="任务描述" prop="description">
+                  <el-input 
+                    v-model="taskForm.description" 
+                    type="textarea"
+                    :rows="3"
+                    placeholder="请输入任务描述"
+                  />
+                </el-form-item>
+                <el-form-item label="任务图片">
+                  <el-upload
+                    class="task-image-upload"
+                    action="/api/files/upload"
+                    :on-success="handleUploadSuccess"
+                    :on-error="handleUploadError"
+                    :before-upload="beforeUpload"
+                    :limit="1"
+                    list-type="picture-card"
+                    :file-list="fileList"
+                  >
+                    <el-icon><Plus /></el-icon>
+                  </el-upload>
+                </el-form-item>
+                <el-form-item label="任务状态" prop="status">
+                  <el-select 
+                    v-model="taskForm.status" 
+                    placeholder="请选择任务状态"
+                    :disabled="!isGlobalAdd"
+                  >
+                    <el-option label="待办事项" value="PENDING" />
+                    <el-option label="正在处理的事项" value="IN_PROGRESS" />
+                    <el-option label="已完成的事项" value="COMPLETED" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="优先级" prop="priority">
+                  <el-select v-model="taskForm.priority" placeholder="请选择优先级" style="width: 100%">
+                    <el-option label="低" value="LOW" />
+                    <el-option label="中" value="MEDIUM" />
+                    <el-option label="高" value="HIGH" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="截止日期" prop="dueDate">
+                  <el-date-picker
+                    v-model="taskForm.dueDate"
+                    type="date"
+                    placeholder="请选择截止日期"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-form>
+              <template #footer>
+                <div class="dialog-footer">
+                  <el-button @click="dialogVisible = false">取消</el-button>
+                  <el-button type="primary" @click="handleSave">确定</el-button>
+                </div>
+              </template>
+            </el-dialog>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 图片预览对话框 -->
-  <el-dialog v-model="imagePreviewVisible" title="图片预览" width="50%">
-    <div class="image-preview-container">
-      <img :src="previewImageUrl" alt="任务图片" class="preview-image">
-    </div>
-  </el-dialog>
+    <!-- 图片预览对话框 -->
+    <el-dialog v-model="imagePreviewVisible" title="图片预览" width="50%">
+      <div class="image-preview-container">
+        <img :src="previewImageUrl" alt="任务图片" class="preview-image">
+      </div>
+    </el-dialog>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
@@ -233,6 +235,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, List, Timer, User, ArrowLeft, ArrowRight, More, Plus, Check } from '@element-plus/icons-vue'
 import api from '@/api'
 import type { FormInstance, UploadFile, UploadFiles } from 'element-plus'
+import MainLayout from '@/layouts/MainLayout.vue'
 
 // 任务列表
 const tasks = ref([])

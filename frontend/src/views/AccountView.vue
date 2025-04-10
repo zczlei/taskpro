@@ -1,165 +1,167 @@
 <template>
-  <div class="app-container">
-    <SideBar />
-    <!-- 主要内容区域 -->
-    <div class="main-content">
-      <div class="page-container">
-        <div class="account-container">
-          <div class="page-header">
-            <h2 class="page-title">账号管理</h2>
-            <el-button type="primary" @click="showAddDialog">
-              <el-icon><Plus /></el-icon>新增账号
-            </el-button>
-          </div>
+  <MainLayout>
+    <div class="app-container">
+      <SideBar />
+      <!-- 主要内容区域 -->
+      <div class="main-content">
+        <div class="page-container">
+          <div class="account-container">
+            <div class="page-header">
+              <h2 class="page-title">账号管理</h2>
+              <el-button type="primary" @click="showAddDialog">
+                <el-icon><Plus /></el-icon>新增账号
+              </el-button>
+            </div>
 
-          <!-- 搜索栏 -->
-          <div class="search-bar">
-            <el-form :inline="true" :model="searchForm">
-              <el-form-item>
-                <el-input
-                  v-model="searchForm.keyword"
-                  placeholder="搜索用户名/姓名/邮箱"
-                  clearable
-                  @keyup.enter="handleSearch"
-                >
-                  <template #prefix>
-                    <el-icon><Search /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item>
-              <el-form-item>
-                <el-select v-model="searchForm.department" placeholder="选择部门" clearable>
-                  <el-option label="技术部" value="技术部" />
-                  <el-option label="产品部" value="产品部" />
-                  <el-option label="运营部" value="运营部" />
-                </el-select>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handleSearch">搜索</el-button>
-                <el-button @click="resetSearch">重置</el-button>
-              </el-form-item>
-            </el-form>
-          </div>
+            <!-- 搜索栏 -->
+            <div class="search-bar">
+              <el-form :inline="true" :model="searchForm">
+                <el-form-item>
+                  <el-input
+                    v-model="searchForm.keyword"
+                    placeholder="搜索用户名/姓名/邮箱"
+                    clearable
+                    @keyup.enter="handleSearch"
+                  >
+                    <template #prefix>
+                      <el-icon><Search /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item>
+                  <el-select v-model="searchForm.department" placeholder="选择部门" clearable>
+                    <el-option label="技术部" value="技术部" />
+                    <el-option label="产品部" value="产品部" />
+                    <el-option label="运营部" value="运营部" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="handleSearch">搜索</el-button>
+                  <el-button @click="resetSearch">重置</el-button>
+                </el-form-item>
+              </el-form>
+            </div>
 
-          <!-- 账号列表 -->
-          <el-table
-            :data="accountList"
-            style="width: 100%"
-            border
-            stripe
-            v-loading="loading"
-          >
-            <el-table-column prop="username" label="用户名" />
-            <el-table-column prop="name" label="姓名" />
-            <el-table-column prop="email" label="邮箱" />
-            <el-table-column prop="phone" label="手机号" />
-            <el-table-column prop="department" label="部门" />
-            <el-table-column prop="position" label="职位" />
-            <el-table-column prop="createTime" label="创建时间" />
-            <el-table-column label="操作" width="200">
-              <template #default="scope">
-                <el-button type="primary" link @click="handleEdit(scope.row)">
-                  编辑
-                </el-button>
-                <el-button type="primary" link @click="handleResetPassword(scope.row)">
-                  重置密码
-                </el-button>
-                <el-button type="danger" link @click="handleDelete(scope.row)">
-                  删除
-                </el-button>
+            <!-- 账号列表 -->
+            <el-table
+              :data="accountList"
+              style="width: 100%"
+              border
+              stripe
+              v-loading="loading"
+            >
+              <el-table-column prop="username" label="用户名" />
+              <el-table-column prop="name" label="姓名" />
+              <el-table-column prop="email" label="邮箱" />
+              <el-table-column prop="phone" label="手机号" />
+              <el-table-column prop="department" label="部门" />
+              <el-table-column prop="position" label="职位" />
+              <el-table-column prop="createTime" label="创建时间" />
+              <el-table-column label="操作" width="200">
+                <template #default="scope">
+                  <el-button type="primary" link @click="handleEdit(scope.row)">
+                    编辑
+                  </el-button>
+                  <el-button type="primary" link @click="handleResetPassword(scope.row)">
+                    重置密码
+                  </el-button>
+                  <el-button type="danger" link @click="handleDelete(scope.row)">
+                    删除
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <!-- 分页 -->
+            <div class="pagination">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="total"
+                layout="total, sizes, prev, pager, next"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
+
+            <!-- 新增/编辑账号对话框 -->
+            <el-dialog
+              :title="dialogType === 'add' ? '新增账号' : '编辑账号'"
+              v-model="dialogVisible"
+              width="500px"
+            >
+              <el-form
+                ref="accountFormRef"
+                :model="accountForm"
+                :rules="accountRules"
+                label-width="80px"
+              >
+                <el-form-item label="用户名" prop="username">
+                  <el-input v-model="accountForm.username" :disabled="dialogType === 'edit'" />
+                </el-form-item>
+                <el-form-item label="姓名" prop="name">
+                  <el-input v-model="accountForm.name" />
+                </el-form-item>
+                <el-form-item label="邮箱" prop="email">
+                  <el-input v-model="accountForm.email" />
+                </el-form-item>
+                <el-form-item label="手机号" prop="phone">
+                  <el-input v-model="accountForm.phone" />
+                </el-form-item>
+                <el-form-item label="部门" prop="department">
+                  <el-select v-model="accountForm.department" placeholder="请选择部门">
+                    <el-option label="技术部" value="技术部" />
+                    <el-option label="产品部" value="产品部" />
+                    <el-option label="运营部" value="运营部" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="职位" prop="position">
+                  <el-input v-model="accountForm.position" />
+                </el-form-item>
+                <el-form-item label="密码" prop="password" v-if="dialogType === 'add'">
+                  <el-input v-model="accountForm.password" type="password" show-password />
+                </el-form-item>
+              </el-form>
+              <template #footer>
+                <span class="dialog-footer">
+                  <el-button @click="dialogVisible = false">取消</el-button>
+                  <el-button type="primary" @click="handleSubmit">确定</el-button>
+                </span>
               </template>
-            </el-table-column>
-          </el-table>
+            </el-dialog>
 
-          <!-- 分页 -->
-          <div class="pagination">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="total"
-              layout="total, sizes, prev, pager, next"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+            <!-- 重置密码对话框 -->
+            <el-dialog
+              title="重置密码"
+              v-model="resetPasswordVisible"
+              width="400px"
+            >
+              <el-form
+                ref="resetPasswordFormRef"
+                :model="resetPasswordForm"
+                :rules="resetPasswordRules"
+                label-width="80px"
+              >
+                <el-form-item label="新密码" prop="password">
+                  <el-input v-model="resetPasswordForm.password" type="password" show-password />
+                </el-form-item>
+                <el-form-item label="确认密码" prop="confirmPassword">
+                  <el-input v-model="resetPasswordForm.confirmPassword" type="password" show-password />
+                </el-form-item>
+              </el-form>
+              <template #footer>
+                <span class="dialog-footer">
+                  <el-button @click="resetPasswordVisible = false">取消</el-button>
+                  <el-button type="primary" @click="handleResetPasswordSubmit">确定</el-button>
+                </span>
+              </template>
+            </el-dialog>
           </div>
-
-          <!-- 新增/编辑账号对话框 -->
-          <el-dialog
-            :title="dialogType === 'add' ? '新增账号' : '编辑账号'"
-            v-model="dialogVisible"
-            width="500px"
-          >
-            <el-form
-              ref="accountFormRef"
-              :model="accountForm"
-              :rules="accountRules"
-              label-width="80px"
-            >
-              <el-form-item label="用户名" prop="username">
-                <el-input v-model="accountForm.username" :disabled="dialogType === 'edit'" />
-              </el-form-item>
-              <el-form-item label="姓名" prop="name">
-                <el-input v-model="accountForm.name" />
-              </el-form-item>
-              <el-form-item label="邮箱" prop="email">
-                <el-input v-model="accountForm.email" />
-              </el-form-item>
-              <el-form-item label="手机号" prop="phone">
-                <el-input v-model="accountForm.phone" />
-              </el-form-item>
-              <el-form-item label="部门" prop="department">
-                <el-select v-model="accountForm.department" placeholder="请选择部门">
-                  <el-option label="技术部" value="技术部" />
-                  <el-option label="产品部" value="产品部" />
-                  <el-option label="运营部" value="运营部" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="职位" prop="position">
-                <el-input v-model="accountForm.position" />
-              </el-form-item>
-              <el-form-item label="密码" prop="password" v-if="dialogType === 'add'">
-                <el-input v-model="accountForm.password" type="password" show-password />
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <span class="dialog-footer">
-                <el-button @click="dialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleSubmit">确定</el-button>
-              </span>
-            </template>
-          </el-dialog>
-
-          <!-- 重置密码对话框 -->
-          <el-dialog
-            title="重置密码"
-            v-model="resetPasswordVisible"
-            width="400px"
-          >
-            <el-form
-              ref="resetPasswordFormRef"
-              :model="resetPasswordForm"
-              :rules="resetPasswordRules"
-              label-width="80px"
-            >
-              <el-form-item label="新密码" prop="password">
-                <el-input v-model="resetPasswordForm.password" type="password" show-password />
-              </el-form-item>
-              <el-form-item label="确认密码" prop="confirmPassword">
-                <el-input v-model="resetPasswordForm.confirmPassword" type="password" show-password />
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <span class="dialog-footer">
-                <el-button @click="resetPasswordVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleResetPasswordSubmit">确定</el-button>
-              </span>
-            </template>
-          </el-dialog>
         </div>
       </div>
     </div>
-  </div>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
@@ -168,6 +170,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import SideBar from '@/components/SideBar.vue'
 import axios from '@/services/api'
+import MainLayout from '@/layouts/MainLayout.vue'
 
 // 搜索表单
 const searchForm = reactive({

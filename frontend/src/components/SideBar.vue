@@ -1,7 +1,7 @@
 <template>
   <div class="sidebar">
     <div class="sidebar-header">
-      <h2>任务管理系统</h2>
+      <!-- 移除标题 -->
     </div>
     <el-menu
       :default-active="$route.path"

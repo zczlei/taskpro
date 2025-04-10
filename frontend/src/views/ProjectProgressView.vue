@@ -1,255 +1,257 @@
 <template>
-  <div class="app-container">
-    <SideBar />
-    <div class="main-content">
-      <div class="page-container">
-        <div class="progress-container">
-          <div class="page-header">
-            <h2 class="page-title">需求进度跟踪</h2>
-          </div>
-
-          <!-- 项目列表 -->
-          <el-table
-            :data="displayProjects"
-            style="width: 100%"
-            border
-            stripe
-            v-loading="loading"
-          >
-            <el-table-column type="selection" width="55" />
-            <el-table-column prop="id" label="序号" width="80" />
-            <el-table-column prop="projectName" label="项目" min-width="150" />
-            <el-table-column prop="description" label="需求" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="details" label="需求详细描述" min-width="300">
-              <template #default="scope">
-                <el-button type="primary" link @click="showDetailDialog(scope.row)">
-                  查看详情
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="进度" width="100">
-              <template #default="scope">
-                <el-tag
-                  :type="getStatusType(scope.row.status)"
-                  effect="light"
-                >
-                  {{ getStatusText(scope.row.status) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="developer" label="开发人员" width="100">
-              <template #default="scope">
-                <el-tag
-                  :type="scope.row.developer === '冬冬' ? 'warning' : 'info'"
-                  effect="plain"
-                >
-                  {{ scope.row.developer }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="estimatedTime" label="预计上线时间" width="120" />
-            <el-table-column prop="actualTime" label="实际上线时间" width="120">
-              <template #default="{ row }">
-                {{ row.actualTime || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="priority" label="优先级" width="100">
-              <template #default="scope">
-                <el-tag
-                  :type="getPriorityType(scope.row.priority)"
-                  effect="plain"
-                >
-                  {{ getPriorityText(scope.row.priority) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="version" label="版本号" width="100" />
-            <el-table-column prop="notes" label="备注" min-width="150" show-overflow-tooltip />
-            
-            <!-- 操作列 -->
-            <el-table-column label="操作" width="150" fixed="right">
-              <template #default="scope">
-                <el-button type="primary" size="small" link @click="handleEdit(scope.row)">
-                  编辑
-                </el-button>
-                <el-button type="danger" size="small" link @click="handleDelete(scope.row)">
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <!-- 分页 -->
-          <div class="pagination">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="total"
-              layout="total, sizes, prev, pager, next"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
-          </div>
-        </div>
-
-        <!-- 需求详情对话框 -->
-        <el-dialog
-          title="需求详细描述"
-          v-model="detailDialogVisible"
-          width="60%"
-        >
-          <div class="requirements-detail">
-            <h3>{{ selectedProject.name }}</h3>
-            <div class="detail-item">
-              <label>需求概述：</label>
-              <p>{{ selectedProject.requirements }}</p>
+  <MainLayout>
+    <div class="app-container">
+      <SideBar />
+      <div class="main-content">
+        <div class="page-container">
+          <div class="progress-container">
+            <div class="page-header">
+              <h2 class="page-title">需求进度跟踪</h2>
             </div>
-            <div class="detail-item">
-              <label>详细描述：</label>
-              <div class="detail-content">
-                {{ selectedProject.requirementsDetail || '暂无详细描述' }}
-              </div>
-            </div>
-            <div class="detail-item">
-              <label>开发状态：</label>
-              <el-tag :type="getStatusType(selectedProject.status)" effect="light">
-                {{ getStatusText(selectedProject.status) }}
-              </el-tag>
-            </div>
-            <div class="detail-item">
-              <label>负责人：</label>
-              <el-tag :type="selectedProject.developer === '冬冬' ? 'warning' : 'info'" effect="plain">
-                {{ selectedProject.developer }}
-              </el-tag>
-            </div>
-          </div>
-          <template #footer>
-            <span class="dialog-footer">
-              <el-button @click="detailDialogVisible = false">关闭</el-button>
-            </span>
-          </template>
-        </el-dialog>
 
-        <!-- 编辑需求对话框 -->
-        <el-dialog
-          :title="editDialogTitle"
-          v-model="editDialogVisible"
-          width="60%"
-        >
-          <el-form
-            ref="editFormRef"
-            :model="editForm"
-            label-width="120px"
-            :rules="formRules"
-          >
-            <el-form-item label="项目名称" prop="projectName">
-              <el-input v-model="editForm.projectName" />
-            </el-form-item>
-            <el-form-item label="需求" prop="description">
-              <el-input v-model="editForm.description" />
-            </el-form-item>
-            <el-form-item label="需求详细描述" prop="details">
-              <el-input v-model="editForm.details" type="textarea" :rows="4" />
-            </el-form-item>
-            <el-form-item label="开发状态" prop="status">
-              <el-select v-model="editForm.status" style="width: 100%">
-                <el-option label="开发中" value="IN_DEVELOPMENT" />
-                <el-option label="已完成" value="COMPLETED" />
-                <el-option label="已取消" value="CANCELLED" />
-                <el-option label="待处理" value="PENDING" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="开发人员" prop="developer">
-              <div class="developer-select-container">
-                <el-select v-model="editForm.developer" style="width: 100%">
-                  <el-option
-                    v-for="dev in developerList"
-                    :key="dev"
-                    :label="dev"
-                    :value="dev"
-                  />
-                </el-select>
-                <el-button type="primary" @click="showDeveloperConfig" size="small">配置</el-button>
-              </div>
-            </el-form-item>
-            <el-form-item label="优先级" prop="priority">
-              <el-select v-model="editForm.priority" style="width: 100%">
-                <el-option label="高" value="HIGH" />
-                <el-option label="中" value="MEDIUM" />
-                <el-option label="低" value="LOW" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="预计上线时间" prop="estimatedTime">
-              <el-date-picker
-                v-model="editForm.estimatedTime"
-                type="date"
-                placeholder="选择预计上线时间"
-                style="width: 100%"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-              />
-            </el-form-item>
-            <el-form-item label="实际上线时间" prop="actualTime">
-              <el-date-picker
-                v-model="editForm.actualTime"
-                type="date"
-                placeholder="选择实际上线时间"
-                style="width: 100%"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-              />
-            </el-form-item>
-            <el-form-item label="版本号" prop="version">
-              <el-input v-model="editForm.version" />
-            </el-form-item>
-            <el-form-item label="备注" prop="notes">
-              <el-input v-model="editForm.notes" type="textarea" :rows="3" />
-            </el-form-item>
-          </el-form>
-          <template #footer>
-            <span class="dialog-footer">
-              <el-button @click="editDialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
-            </span>
-          </template>
-        </el-dialog>
-
-        <!-- 开发人员配置对话框 -->
-        <el-dialog
-          title="开发人员配置"
-          v-model="developerConfigVisible"
-          width="500px"
-        >
-          <div class="developer-config">
-            <div class="developer-header">
-              <el-button type="primary" @click="addDeveloper">添加开发人员</el-button>
-            </div>
-            <el-table :data="developerList" border style="width: 100%">
-              <el-table-column label="开发人员">
-                <template #default="{ row, $index }">
-                  <el-input v-model="developerList[$index]" placeholder="请输入开发人员姓名" />
+            <!-- 项目列表 -->
+            <el-table
+              :data="displayProjects"
+              style="width: 100%"
+              border
+              stripe
+              v-loading="loading"
+            >
+              <el-table-column type="selection" width="55" />
+              <el-table-column prop="id" label="序号" width="80" />
+              <el-table-column prop="projectName" label="项目" min-width="150" />
+              <el-table-column prop="description" label="需求" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="details" label="需求详细描述" min-width="300">
+                <template #default="scope">
+                  <el-button type="primary" link @click="showDetailDialog(scope.row)">
+                    查看详情
+                  </el-button>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="100">
-                <template #default="{ $index }">
-                  <el-button type="danger" link @click="removeDeveloper($index)">
+              <el-table-column prop="status" label="进度" width="100">
+                <template #default="scope">
+                  <el-tag
+                    :type="getStatusType(scope.row.status)"
+                    effect="light"
+                  >
+                    {{ getStatusText(scope.row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="developer" label="开发人员" width="100">
+                <template #default="scope">
+                  <el-tag
+                    :type="scope.row.developer === '冬冬' ? 'warning' : 'info'"
+                    effect="plain"
+                  >
+                    {{ scope.row.developer }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="estimatedTime" label="预计上线时间" width="120" />
+              <el-table-column prop="actualTime" label="实际上线时间" width="120">
+                <template #default="{ row }">
+                  {{ row.actualTime || '-' }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="priority" label="优先级" width="100">
+                <template #default="scope">
+                  <el-tag
+                    :type="getPriorityType(scope.row.priority)"
+                    effect="plain"
+                  >
+                    {{ getPriorityText(scope.row.priority) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="version" label="版本号" width="100" />
+              <el-table-column prop="notes" label="备注" min-width="150" show-overflow-tooltip />
+              
+              <!-- 操作列 -->
+              <el-table-column label="操作" width="150" fixed="right">
+                <template #default="scope">
+                  <el-button type="primary" size="small" link @click="handleEdit(scope.row)">
+                    编辑
+                  </el-button>
+                  <el-button type="danger" size="small" link @click="handleDelete(scope.row)">
                     删除
                   </el-button>
                 </template>
               </el-table-column>
             </el-table>
-            <div class="dialog-footer" style="margin-top: 20px;">
-              <el-button @click="developerConfigVisible = false">取消</el-button>
-              <el-button type="primary" @click="saveDeveloperConfig">
-                确定
-              </el-button>
+
+            <!-- 分页 -->
+            <div class="pagination">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="total"
+                layout="total, sizes, prev, pager, next"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
             </div>
           </div>
-        </el-dialog>
+
+          <!-- 需求详情对话框 -->
+          <el-dialog
+            title="需求详细描述"
+            v-model="detailDialogVisible"
+            width="60%"
+          >
+            <div class="requirements-detail">
+              <h3>{{ selectedProject.name }}</h3>
+              <div class="detail-item">
+                <label>需求概述：</label>
+                <p>{{ selectedProject.requirements }}</p>
+              </div>
+              <div class="detail-item">
+                <label>详细描述：</label>
+                <div class="detail-content">
+                  {{ selectedProject.requirementsDetail || '暂无详细描述' }}
+                </div>
+              </div>
+              <div class="detail-item">
+                <label>开发状态：</label>
+                <el-tag :type="getStatusType(selectedProject.status)" effect="light">
+                  {{ getStatusText(selectedProject.status) }}
+                </el-tag>
+              </div>
+              <div class="detail-item">
+                <label>负责人：</label>
+                <el-tag :type="selectedProject.developer === '冬冬' ? 'warning' : 'info'" effect="plain">
+                  {{ selectedProject.developer }}
+                </el-tag>
+              </div>
+            </div>
+            <template #footer>
+              <span class="dialog-footer">
+                <el-button @click="detailDialogVisible = false">关闭</el-button>
+              </span>
+            </template>
+          </el-dialog>
+
+          <!-- 编辑需求对话框 -->
+          <el-dialog
+            :title="editDialogTitle"
+            v-model="editDialogVisible"
+            width="60%"
+          >
+            <el-form
+              ref="editFormRef"
+              :model="editForm"
+              label-width="120px"
+              :rules="formRules"
+            >
+              <el-form-item label="项目名称" prop="projectName">
+                <el-input v-model="editForm.projectName" />
+              </el-form-item>
+              <el-form-item label="需求" prop="description">
+                <el-input v-model="editForm.description" />
+              </el-form-item>
+              <el-form-item label="需求详细描述" prop="details">
+                <el-input v-model="editForm.details" type="textarea" :rows="4" />
+              </el-form-item>
+              <el-form-item label="开发状态" prop="status">
+                <el-select v-model="editForm.status" style="width: 100%">
+                  <el-option label="开发中" value="IN_DEVELOPMENT" />
+                  <el-option label="已完成" value="COMPLETED" />
+                  <el-option label="已取消" value="CANCELLED" />
+                  <el-option label="待处理" value="PENDING" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="开发人员" prop="developer">
+                <div class="developer-select-container">
+                  <el-select v-model="editForm.developer" style="width: 100%">
+                    <el-option
+                      v-for="dev in developerList"
+                      :key="dev"
+                      :label="dev"
+                      :value="dev"
+                    />
+                  </el-select>
+                  <el-button type="primary" @click="showDeveloperConfig" size="small">配置</el-button>
+                </div>
+              </el-form-item>
+              <el-form-item label="优先级" prop="priority">
+                <el-select v-model="editForm.priority" style="width: 100%">
+                  <el-option label="高" value="HIGH" />
+                  <el-option label="中" value="MEDIUM" />
+                  <el-option label="低" value="LOW" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="预计上线时间" prop="estimatedTime">
+                <el-date-picker
+                  v-model="editForm.estimatedTime"
+                  type="date"
+                  placeholder="选择预计上线时间"
+                  style="width: 100%"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                />
+              </el-form-item>
+              <el-form-item label="实际上线时间" prop="actualTime">
+                <el-date-picker
+                  v-model="editForm.actualTime"
+                  type="date"
+                  placeholder="选择实际上线时间"
+                  style="width: 100%"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                />
+              </el-form-item>
+              <el-form-item label="版本号" prop="version">
+                <el-input v-model="editForm.version" />
+              </el-form-item>
+              <el-form-item label="备注" prop="notes">
+                <el-input v-model="editForm.notes" type="textarea" :rows="3" />
+              </el-form-item>
+            </el-form>
+            <template #footer>
+              <span class="dialog-footer">
+                <el-button @click="editDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
+              </span>
+            </template>
+          </el-dialog>
+
+          <!-- 开发人员配置对话框 -->
+          <el-dialog
+            title="开发人员配置"
+            v-model="developerConfigVisible"
+            width="500px"
+          >
+            <div class="developer-config">
+              <div class="developer-header">
+                <el-button type="primary" @click="addDeveloper">添加开发人员</el-button>
+              </div>
+              <el-table :data="developerList" border style="width: 100%">
+                <el-table-column label="开发人员">
+                  <template #default="{ row, $index }">
+                    <el-input v-model="developerList[$index]" placeholder="请输入开发人员姓名" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                  <template #default="{ $index }">
+                    <el-button type="danger" link @click="removeDeveloper($index)">
+                      删除
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div class="dialog-footer" style="margin-top: 20px;">
+                <el-button @click="developerConfigVisible = false">取消</el-button>
+                <el-button type="primary" @click="saveDeveloperConfig">
+                  确定
+                </el-button>
+              </div>
+            </div>
+          </el-dialog>
+        </div>
       </div>
     </div>
-  </div>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
@@ -257,6 +259,7 @@ import { ref, onMounted, computed } from 'vue'
 import SideBar from '@/components/SideBar.vue'
 import { useProjectStore, type Project } from '@/stores/projects'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import MainLayout from '@/layouts/MainLayout.vue'
 
 // 获取项目store
 const projectStore = useProjectStore()

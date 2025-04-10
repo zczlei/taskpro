@@ -5,6 +5,7 @@ import api from '@/api'
 import FieldConfig from '@/components/FieldConfig.vue'
 import SideBar from '@/components/SideBar.vue'
 import { useProjectStore } from '@/stores/projects'
+import MainLayout from '@/layouts/MainLayout.vue'
 
 // 项目列表
 const projectList = ref([])
@@ -362,195 +363,200 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="requirement-page">
-    <SideBar />
-    <div class="main-content">
-      <div class="page-container">
-        <!-- 需求管理页面 -->
-        <div class="content-wrapper">
-          <div class="header">
-            <h2>需求管理</h2>
-            <div class="actions">
-              <el-button type="primary" @click="showAddDialog">新增需求</el-button>
-              <el-button @click="showFieldConfig">字段配置</el-button>
-              <el-button @click="showProjectConfig">项目配置</el-button>
+  <MainLayout>
+    <div class="app-container">
+      <!-- 左侧菜单 -->
+      <SideBar />
+      
+      <!-- 主内容 -->
+      <div class="main-content">
+        <div class="page-container">
+          <!-- 需求管理页面 -->
+          <div class="content-wrapper">
+            <div class="header">
+              <h2>需求管理</h2>
+              <div class="actions">
+                <el-button type="primary" @click="showAddDialog">新增需求</el-button>
+                <el-button @click="showFieldConfig">字段配置</el-button>
+                <el-button @click="showProjectConfig">项目配置</el-button>
+              </div>
             </div>
-          </div>
 
-          <el-table 
-            :data="requirements" 
-            border 
-            style="width: 100%"
-            v-loading="loading"
-          >
-            <!-- 添加序号列 -->
-            <el-table-column 
-              label="序号" 
-              prop="id" 
-              width="80"
-              fixed="left"
-            />
-            
-            <template v-for="field in visibleFields" :key="field.prop">
+            <el-table 
+              :data="requirements" 
+              border 
+              style="width: 100%"
+              v-loading="loading"
+            >
+              <!-- 添加序号列 -->
               <el-table-column 
-                :prop="field.prop" 
-                :label="field.label" 
-                :width="field.width ? field.width + 'px' : 'auto'"
-              >
-                <template v-if="field.type === 'select'" #default="scope">
-                  <el-tag
-                    :type="getTagType(scope.row[field.prop], field.prop)"
-                    effect="light"
-                  >
-                    {{ getOptionLabel(scope.row[field.prop], field.options) }}
-                  </el-tag>
+                label="序号" 
+                prop="id" 
+                width="80"
+                fixed="left"
+              />
+              
+              <template v-for="field in visibleFields" :key="field.prop">
+                <el-table-column 
+                  :prop="field.prop" 
+                  :label="field.label" 
+                  :width="field.width ? field.width + 'px' : 'auto'"
+                >
+                  <template v-if="field.type === 'select'" #default="scope">
+                    <el-tag
+                      :type="getTagType(scope.row[field.prop], field.prop)"
+                      effect="light"
+                    >
+                      {{ getOptionLabel(scope.row[field.prop], field.options) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </template>
+              
+              <el-table-column label="操作" fixed="right" width="200px">
+                <template #default="scope">
+                  <el-button link type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+                  <el-button link type="primary" @click="handleDevelopment(scope.row)">开发</el-button>
+                  <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
                 </template>
               </el-table-column>
-            </template>
+            </el-table>
             
-            <el-table-column label="操作" fixed="right" width="200px">
-              <template #default="scope">
-                <el-button link type="primary" @click="handleEdit(scope.row)">编辑</el-button>
-                <el-button link type="primary" @click="handleDevelopment(scope.row)">开发</el-button>
-                <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          
-          <!-- 需求表单对话框 -->
-          <el-dialog
-            :title="isEdit ? '编辑需求' : '新增需求'"
-            v-model="requirementDialogVisible"
-            width="50%"
-            align-center
-          >
-            <el-form
-              ref="formRef"
-              :model="form"
-              :rules="formRules"
-              label-width="120px"
+            <!-- 需求表单对话框 -->
+            <el-dialog
+              :title="isEdit ? '编辑需求' : '新增需求'"
+              v-model="requirementDialogVisible"
+              width="50%"
+              align-center
             >
-              <template v-for="field in visibleFields" :key="field.prop">
-                <el-form-item 
-                  :label="field.label"
-                  :prop="field.prop"
-                  :rules="field.required ? [{ required: true, message: `请输入${field.label}`, trigger: 'blur' }] : []"
-                >
-                  <template v-if="field.type === 'input'">
-                    <el-input v-model="form[field.prop]" :placeholder="`请输入${field.label}`" />
-                  </template>
-                  <template v-else-if="field.type === 'textarea'">
-                    <el-input 
-                      v-model="form[field.prop]" 
-                      type="textarea" 
-                      :rows="3"
-                      :placeholder="`请输入${field.label}`"
-                    />
-                  </template>
-                  <template v-else-if="field.type === 'select'">
-                    <el-select 
-                      v-model="form[field.prop]" 
-                      :placeholder="`请选择${field.label}`"
-                      style="width: 100%"
-                    >
-                      <el-option
-                        v-for="option in field.options"
-                        :key="option.value"
-                        :label="option.label"
-                        :value="option.value"
+              <el-form
+                ref="formRef"
+                :model="form"
+                :rules="formRules"
+                label-width="120px"
+              >
+                <template v-for="field in visibleFields" :key="field.prop">
+                  <el-form-item 
+                    :label="field.label"
+                    :prop="field.prop"
+                    :rules="field.required ? [{ required: true, message: `请输入${field.label}`, trigger: 'blur' }] : []"
+                  >
+                    <template v-if="field.type === 'input'">
+                      <el-input v-model="form[field.prop]" :placeholder="`请输入${field.label}`" />
+                    </template>
+                    <template v-else-if="field.type === 'textarea'">
+                      <el-input 
+                        v-model="form[field.prop]" 
+                        type="textarea" 
+                        :rows="3"
+                        :placeholder="`请输入${field.label}`"
                       />
-                    </el-select>
-                  </template>
-                  <template v-else-if="field.type === 'date'">
-                    <el-date-picker
-                      v-model="form[field.prop]"
-                      type="date"
-                      :placeholder="`请选择${field.label}`"
-                      style="width: 100%"
-                    />
-                  </template>
-                </el-form-item>
-              </template>
-            </el-form>
-            <template #footer>
-              <span class="dialog-footer">
-                <el-button @click="requirementDialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleSave">确定</el-button>
-              </span>
-            </template>
-          </el-dialog>
-          
-          <!-- 字段配置对话框 -->
-          <FieldConfig
-            v-model:visible="fieldConfigVisible"
-            :fields="formFields"
-            @save="handleFieldConfigSave"
-          />
-          
-          <!-- 项目配置对话框 -->
-          <el-dialog
-            title="项目配置"
-            v-model="projectDialogVisible"
-            width="50%"
-            align-center
-          >
-            <div class="project-config">
-              <div class="project-header">
-                <h3>配置项目</h3>
-                <el-button type="primary" @click="addProject">新增项目</el-button>
-              </div>
-              <el-form>
-                <div v-for="(project, index) in projectList" :key="index" class="project-item">
-                  <el-form-item label="项目名称">
-                    <div class="project-input">
-                      <el-input v-model="project.name" placeholder="请输入项目名称" />
-                      <el-button type="danger" @click="removeProject(index)">删除</el-button>
-                    </div>
+                    </template>
+                    <template v-else-if="field.type === 'select'">
+                      <el-select 
+                        v-model="form[field.prop]" 
+                        :placeholder="`请选择${field.label}`"
+                        style="width: 100%"
+                      >
+                        <el-option
+                          v-for="option in field.options"
+                          :key="option.value"
+                          :label="option.label"
+                          :value="option.value"
+                        />
+                      </el-select>
+                    </template>
+                    <template v-else-if="field.type === 'date'">
+                      <el-date-picker
+                        v-model="form[field.prop]"
+                        type="date"
+                        :placeholder="`请选择${field.label}`"
+                        style="width: 100%"
+                      />
+                    </template>
                   </el-form-item>
-                </div>
+                </template>
               </el-form>
-            </div>
+              <template #footer>
+                <span class="dialog-footer">
+                  <el-button @click="requirementDialogVisible = false">取消</el-button>
+                  <el-button type="primary" @click="handleSave">确定</el-button>
+                </span>
+              </template>
+            </el-dialog>
             
-            <template #footer>
-              <span class="dialog-footer">
-                <el-button @click="projectDialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="saveProjects">保存</el-button>
-              </span>
-            </template>
-          </el-dialog>
-          
-          <!-- 开发人员分配对话框 -->
-          <el-dialog
-            title="分配开发人员"
-            v-model="showDevelopmentDialog"
-            width="400px"
-          >
-            <el-form
-              :model="developmentForm"
-              label-width="100px"
+            <!-- 字段配置对话框 -->
+            <FieldConfig
+              v-model:visible="fieldConfigVisible"
+              :fields="formFields"
+              @save="handleFieldConfigSave"
+            />
+            
+            <!-- 项目配置对话框 -->
+            <el-dialog
+              title="项目配置"
+              v-model="projectDialogVisible"
+              width="50%"
+              align-center
             >
-              <el-form-item label="开发人员">
-                <el-select v-model="developmentForm.developer" placeholder="请选择开发人员">
-                  <el-option label="义军" value="义军" />
-                  <el-option label="冬冬" value="冬冬" />
-                </el-select>
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <span class="dialog-footer">
-                <el-button @click="showDevelopmentDialog = false">取消</el-button>
-                <el-button type="primary" @click="handleDevelopmentSubmit">确定</el-button>
-              </span>
-            </template>
-          </el-dialog>
+              <div class="project-config">
+                <div class="project-header">
+                  <h3>配置项目</h3>
+                  <el-button type="primary" @click="addProject">新增项目</el-button>
+                </div>
+                <el-form>
+                  <div v-for="(project, index) in projectList" :key="index" class="project-item">
+                    <el-form-item label="项目名称">
+                      <div class="project-input">
+                        <el-input v-model="project.name" placeholder="请输入项目名称" />
+                        <el-button type="danger" @click="removeProject(index)">删除</el-button>
+                      </div>
+                    </el-form-item>
+                  </div>
+                </el-form>
+              </div>
+              
+              <template #footer>
+                <span class="dialog-footer">
+                  <el-button @click="projectDialogVisible = false">取消</el-button>
+                  <el-button type="primary" @click="saveProjects">保存</el-button>
+                </span>
+              </template>
+            </el-dialog>
+            
+            <!-- 开发人员分配对话框 -->
+            <el-dialog
+              title="分配开发人员"
+              v-model="showDevelopmentDialog"
+              width="400px"
+            >
+              <el-form
+                :model="developmentForm"
+                label-width="100px"
+              >
+                <el-form-item label="开发人员">
+                  <el-select v-model="developmentForm.developer" placeholder="请选择开发人员">
+                    <el-option label="义军" value="义军" />
+                    <el-option label="冬冬" value="冬冬" />
+                  </el-select>
+                </el-form-item>
+              </el-form>
+              <template #footer>
+                <span class="dialog-footer">
+                  <el-button @click="showDevelopmentDialog = false">取消</el-button>
+                  <el-button type="primary" @click="handleDevelopmentSubmit">确定</el-button>
+                </span>
+              </template>
+            </el-dialog>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </MainLayout>
 </template>
 
 <style scoped>
-.requirement-page {
+.app-container {
   display: flex;
   min-height: 100vh;
   background-color: #f0f2f5;
