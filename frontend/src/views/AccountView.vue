@@ -1,30 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- 左侧菜单 -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        项目管理系统
-      </div>
-      <el-menu default-active="/account" router>
-        <el-menu-item index="/">
-          <el-icon><Document /></el-icon>
-          <span>项目需求</span>
-        </el-menu-item>
-        <el-menu-item index="/personal-tasks">
-          <el-icon><List /></el-icon>
-          <span>个人任务</span>
-        </el-menu-item>
-        <el-menu-item index="progress">
-          <el-icon><Timer /></el-icon>
-          <span>项目进度</span>
-        </el-menu-item>
-        <el-menu-item index="/account">
-          <el-icon><User /></el-icon>
-          <span>账号管理</span>
-        </el-menu-item>
-      </el-menu>
-    </div>
-
+    <SideBar />
     <!-- 主要内容区域 -->
     <div class="main-content">
       <div class="page-container">
@@ -189,7 +165,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Document, List, Timer, User } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
+import SideBar from '@/components/SideBar.vue'
 
 // 搜索表单
 const searchForm = reactive({
@@ -433,6 +410,21 @@ onMounted(() => {
   background-color: #f0f2f5;
 }
 
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.page-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  padding: 24px;
+  min-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
 .sidebar {
   width: 240px;
   background-color: #fff;
@@ -453,23 +445,6 @@ onMounted(() => {
   color: #1f2937;
   background: #fff;
   border-bottom: 1px solid #dcdfe6;
-}
-
-.main-content {
-  flex: 1;
-  padding: 24px;
-  overflow: hidden;
-}
-
-.page-container {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  padding: 24px;
-  height: calc(100vh - 48px);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 :deep(.el-menu) {
@@ -503,6 +478,7 @@ onMounted(() => {
   padding: 0;
   background-color: transparent;
   min-height: auto;
+  height: 100%;
 }
 
 .page-header {

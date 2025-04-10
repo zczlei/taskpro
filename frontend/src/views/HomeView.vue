@@ -3,6 +3,8 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
 import FieldConfig from '@/components/FieldConfig.vue'
+import SideBar from '@/components/SideBar.vue'
+import { useProjectStore } from '@/stores/projects'
 
 // 项目列表
 const projectList = ref([])
@@ -22,6 +24,13 @@ const formRef = ref(null)
 
 // 项目配置相关
 const projectDialogVisible = ref(false)
+
+// 开发分配相关
+const developmentDialogVisible = ref(false)
+const developmentForm = ref({
+  developer: ''
+})
+const currentRequirement = ref(null)
 
 // 表单字段配置
 const formFields = ref([
@@ -295,6 +304,64 @@ const saveProjects = async () => {
   }
 }
 
+// 初始化 projectStore
+const projectStore = useProjectStore()
+
+// 处理开发按钮点击
+const handleDevelopment = async (row) => {
+  currentRequirement.value = row
+  developmentForm.value.developer = ''
+  developmentDialogVisible.value = true
+}
+
+// 提交开发分配
+const handleDevelopmentSubmit = async () => {
+  if (!developmentForm.value.developer) {
+    ElMessage.warning('请选择开发人员')
+    return
+  }
+
+  if (!currentRequirement.value) {
+    ElMessage.warning('需求数据异常')
+    return
+  }
+
+  try {
+    loading.value = true
+    
+    // 创建进度页面需要的项目对象
+    const progressProject = {
+      id: currentRequirement.value.id,
+      name: currentRequirement.value.projectName,
+      requirements: currentRequirement.value.description,
+      requirementsDetail: currentRequirement.value.details,
+      status: '开发中',
+      developer: developmentForm.value.developer,
+      estimatedTime: '',
+      actualTime: '',
+      priority: currentRequirement.value.priority,
+      version: '',
+      notes: '',
+      inDevelopment: true
+    }
+
+    // 先删除原始需求
+    await api.delete(`/api/requirements/${currentRequirement.value.id}`)
+    
+    // 使用 store 的方法来更新状态
+    projectStore.startDevelopment(progressProject, developmentForm.value.developer)
+    
+    ElMessage.success('开发分配成功')
+    developmentDialogVisible.value = false
+    await loadRequirements() // 刷新数据
+  } catch (error) {
+    console.error('分配开发失败:', error)
+    ElMessage.error('分配开发失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   loadRequirements()
@@ -303,34 +370,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-container">
-    <!-- 左侧菜单 -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        项目管理系统
-      </div>
-      <el-menu default-active="requirements" router>
-        <el-menu-item index="/">
-          <el-icon><Document /></el-icon>
-          <span>项目需求</span>
-        </el-menu-item>
-        <el-menu-item index="/personal-tasks">
-          <el-icon><List /></el-icon>
-          <span>个人任务</span>
-        </el-menu-item>
-        <el-menu-item index="progress">
-          <el-icon><Timer /></el-icon>
-          <span>项目进度</span>
-        </el-menu-item>
-        <el-menu-item index="/account">
-          <el-icon><User /></el-icon>
-          <span>账号管理</span>
-        </el-menu-item>
-      </el-menu>
-    </div>
-
-    <!-- 主要内容区域 -->
+  <div class="home">
+    <SideBar />
     <div class="main-content">
+      <div class="header">
+        <div class="header-right">
+          <el-dropdown @command="handleCommand">
+            <span class="user-profile">
+              <el-avatar :size="32" icon="UserFilled" />
+              <span class="username">{{ username }}</span>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="account">个人信息</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
       <div class="page-container">
         <!-- 需求管理页面 -->
         <div class="requirement-page">
@@ -368,10 +426,11 @@ onMounted(() => {
               </el-table-column>
             </template>
 
-            <el-table-column label="操作" width="150" fixed="right">
+            <el-table-column label="操作" width="200" fixed="right">
               <template #default="{ row }">
                 <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
                 <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+                <el-button type="success" link @click="handleDevelopment(row)">开发</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -477,6 +536,31 @@ onMounted(() => {
               </div>
             </div>
           </el-dialog>
+
+          <!-- 开发分配对话框 -->
+          <el-dialog
+            title="分配开发人员"
+            v-model="developmentDialogVisible"
+            width="400px"
+          >
+            <el-form
+              :model="developmentForm"
+              label-width="100px"
+            >
+              <el-form-item label="开发人员">
+                <el-select v-model="developmentForm.developer" placeholder="请选择开发人员">
+                  <el-option label="义军" value="义军" />
+                  <el-option label="冬冬" value="冬冬" />
+                </el-select>
+              </el-form-item>
+            </el-form>
+            <template #footer>
+              <span class="dialog-footer">
+                <el-button @click="developmentDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="handleDevelopmentSubmit">确定</el-button>
+              </span>
+            </template>
+          </el-dialog>
         </div>
       </div>
     </div>
@@ -484,35 +568,37 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.app-container {
+.home {
   display: flex;
   min-height: 100vh;
   background-color: #f0f2f5;
 }
 
-.sidebar {
-  width: 200px;
-  background-color: #fff;
-  border-right: 1px solid #dcdfe6;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-
-.sidebar-header {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #303133;
-  border-bottom: 1px solid #dcdfe6;
-}
-
 .main-content {
   flex: 1;
   padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.username {
+  margin-left: 10px;
 }
 
 .page-container {
