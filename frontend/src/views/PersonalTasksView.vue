@@ -361,6 +361,9 @@ const showAddDialog = (status: string) => {
     dueDate: '',
     imagePath: ''
   }
+  // 清空文件列表
+  fileList.value = []
+  
   dialogTitle.value = '新增任务'
   dialogVisible.value = true
 }
@@ -378,6 +381,9 @@ const showGlobalAddDialog = () => {
     dueDate: '',
     imagePath: ''
   }
+  // 清空文件列表
+  fileList.value = []
+  
   dialogTitle.value = '新增任务'
   dialogVisible.value = true
 }
