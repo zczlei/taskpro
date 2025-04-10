@@ -48,7 +48,11 @@
               </template>
             </el-table-column>
             <el-table-column prop="estimatedTime" label="预计上线时间" width="120" />
-            <el-table-column prop="actualTime" label="实际上线时间" width="120" />
+            <el-table-column prop="actualTime" label="实际上线时间" width="120">
+              <template #default="{ row }">
+                {{ row.actualTime || '-' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="priority" label="优先级" width="100">
               <template #default="scope">
                 <el-tag
@@ -176,6 +180,26 @@
                 <el-option label="低" value="LOW" />
               </el-select>
             </el-form-item>
+            <el-form-item label="预计上线时间" prop="estimatedTime">
+              <el-date-picker
+                v-model="editForm.estimatedTime"
+                type="date"
+                placeholder="选择预计上线时间"
+                style="width: 100%"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
+            <el-form-item label="实际上线时间" prop="actualTime">
+              <el-date-picker
+                v-model="editForm.actualTime"
+                type="date"
+                placeholder="选择实际上线时间"
+                style="width: 100%"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
             <el-form-item label="版本号" prop="version">
               <el-input v-model="editForm.version" />
             </el-form-item>
@@ -264,6 +288,8 @@ const editForm = ref({
   status: '',
   developer: '',
   priority: '',
+  estimatedTime: '',
+  actualTime: '',
   version: '',
   notes: ''
 })
@@ -355,7 +381,22 @@ const handleCurrentChange = (val: number) => {
 
 // 编辑需求
 const handleEdit = (row: Project) => {
-  editForm.value = { ...row }
+  // 尝试从备注中提取实际上线时间
+  let actualTime = '';
+  if (row.notes && row.notes.includes('实际上线时间:')) {
+    const match = row.notes.match(/实际上线时间:\s*([\d-]+)/);
+    if (match && match[1]) {
+      actualTime = match[1];
+    }
+  }
+  
+  editForm.value = { 
+    ...row,
+    // 将estimatedCompletionDate映射到estimatedTime
+    estimatedTime: row.estimatedCompletionDate,
+    // 从备注中提取的实际上线时间
+    actualTime: actualTime
+  }
   editDialogVisible.value = true
 }
 
@@ -402,14 +443,32 @@ const handleSave = async () => {
     await editFormRef.value.validate()
     
     saveLoading.value = true
-    // 打印保存前的数据，检查developer字段
+    // 打印保存前的数据，检查字段
     console.log('保存前数据:', editForm.value)
     
-    // 确保正确更新项目
+    // 将实际上线时间添加到备注字段中，因为后端没有对应字段
+    let notesWithActualTime = editForm.value.notes || '';
+    if (editForm.value.actualTime) {
+      // 如果备注中已包含了实际上线时间，则替换它
+      if (notesWithActualTime.includes('实际上线时间:')) {
+        notesWithActualTime = notesWithActualTime.replace(/实际上线时间:.*(\n|$)/, `实际上线时间: ${editForm.value.actualTime}\n`);
+      } else {
+        // 否则添加新的实际上线时间
+        notesWithActualTime = notesWithActualTime ? 
+          `${notesWithActualTime}\n实际上线时间: ${editForm.value.actualTime}` : 
+          `实际上线时间: ${editForm.value.actualTime}`;
+      }
+    }
+    
+    // 确保正确更新项目，将前端字段映射到后端字段
     await projectStore.updateProject({
       ...editForm.value,
-      // 确保developer字段正确设置
-      developer: editForm.value.developer || ''
+      // 确保开发人员字段正确设置
+      developer: editForm.value.developer || '',
+      // 将estimatedTime映射到estimatedCompletionDate
+      estimatedCompletionDate: editForm.value.estimatedTime,
+      // 将actualTime保存到notes字段中
+      notes: notesWithActualTime
     })
     
     ElMessage.success('保存成功')

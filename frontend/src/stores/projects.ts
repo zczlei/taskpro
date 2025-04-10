@@ -28,10 +28,25 @@ export const useProjectStore = defineStore('projects', () => {
       console.log('需求列表API响应:', response)
       
       // 直接使用response，因为axios拦截器已经处理了data的提取
-      projects.value = response.map((item: any) => ({
-        ...item,
-        inDevelopment: item.status === 'IN_DEVELOPMENT'
-      }))
+      projects.value = response.map((item: any) => {
+        // 尝试从备注中提取实际上线时间
+        let actualTime = '';
+        if (item.notes && item.notes.includes('实际上线时间:')) {
+          const match = item.notes.match(/实际上线时间:\s*([\d-]+)/);
+          if (match && match[1]) {
+            actualTime = match[1];
+          }
+        }
+        
+        return {
+          ...item,
+          inDevelopment: item.status === 'IN_DEVELOPMENT',
+          // 将后端的estimatedCompletionDate映射到前端的estimatedTime
+          estimatedTime: item.estimatedCompletionDate,
+          // 使用从备注中提取的实际上线时间
+          actualTime: actualTime
+        };
+      })
       
       console.log('处理后的需求列表:', projects.value)
       console.log('开发中的需求:', projects.value.filter(p => p.status === 'IN_DEVELOPMENT'))
