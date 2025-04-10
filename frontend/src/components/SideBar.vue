@@ -8,7 +8,7 @@
       class="el-menu-vertical"
       router
     >
-      <el-menu-item index="/project-requirements">
+      <el-menu-item index="/requirement-management">
         <el-icon><Document /></el-icon>
         <span>需求管理</span>
       </el-menu-item>

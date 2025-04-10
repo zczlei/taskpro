@@ -4,13 +4,14 @@ import PersonalTasksView from '../views/PersonalTasksView.vue'
 import AccountView from '../views/AccountView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProjectProgressView from '@/views/ProjectProgressView.vue'
+import RequirementManagementView from '@/views/RequirementManagementView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/project-requirements'
+      redirect: '/requirement-management'
     },
     {
       path: '/login',
@@ -22,12 +23,20 @@ const router = createRouter({
     },
     {
       path: '/home',
-      redirect: '/project-requirements'
+      redirect: '/requirement-management'
     },
     {
       path: '/project-requirements',
       name: 'project-requirements',
       component: HomeView,
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/requirement-management',
+      name: 'requirement-management',
+      component: RequirementManagementView,
       meta: {
         requiresAuth: true
       }
