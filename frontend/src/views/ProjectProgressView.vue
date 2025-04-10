@@ -303,12 +303,11 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-// 计算分页后的项目列表
+// 计算属性：需要显示的项目列表
 const displayProjects = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return projectList.value.slice(start, end)
-})
+  return projectList.value
+    .slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value);
+});
 
 // 获取状态对应的类型
 const getStatusType = (status: string) => {
@@ -381,21 +380,14 @@ const handleCurrentChange = (val: number) => {
 
 // 编辑需求
 const handleEdit = (row: Project) => {
-  // 尝试从备注中提取实际上线时间
-  let actualTime = '';
-  if (row.notes && row.notes.includes('实际上线时间:')) {
-    const match = row.notes.match(/实际上线时间:\s*([\d-]+)/);
-    if (match && match[1]) {
-      actualTime = match[1];
-    }
-  }
+  console.log('编辑的行数据:', row)
   
   editForm.value = { 
     ...row,
     // 将estimatedCompletionDate映射到estimatedTime
     estimatedTime: row.estimatedCompletionDate,
-    // 从备注中提取的实际上线时间
-    actualTime: actualTime
+    // 使用后端返回的actualTime
+    actualTime: row.actualTime
   }
   editDialogVisible.value = true
 }
@@ -446,29 +438,14 @@ const handleSave = async () => {
     // 打印保存前的数据，检查字段
     console.log('保存前数据:', editForm.value)
     
-    // 将实际上线时间添加到备注字段中，因为后端没有对应字段
-    let notesWithActualTime = editForm.value.notes || '';
-    if (editForm.value.actualTime) {
-      // 如果备注中已包含了实际上线时间，则替换它
-      if (notesWithActualTime.includes('实际上线时间:')) {
-        notesWithActualTime = notesWithActualTime.replace(/实际上线时间:.*(\n|$)/, `实际上线时间: ${editForm.value.actualTime}\n`);
-      } else {
-        // 否则添加新的实际上线时间
-        notesWithActualTime = notesWithActualTime ? 
-          `${notesWithActualTime}\n实际上线时间: ${editForm.value.actualTime}` : 
-          `实际上线时间: ${editForm.value.actualTime}`;
-      }
-    }
-    
     // 确保正确更新项目，将前端字段映射到后端字段
     await projectStore.updateProject({
       ...editForm.value,
       // 确保开发人员字段正确设置
       developer: editForm.value.developer || '',
       // 将estimatedTime映射到estimatedCompletionDate
-      estimatedCompletionDate: editForm.value.estimatedTime,
-      // 将actualTime保存到notes字段中
-      notes: notesWithActualTime
+      estimatedCompletionDate: editForm.value.estimatedTime
+      // actualTime会在stores/projects.ts中被映射到actualCompletionDate
     })
     
     ElMessage.success('保存成功')

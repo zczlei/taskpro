@@ -37,6 +37,7 @@ public class RequirementController {
         System.out.println("收到更新需求请求，ID: " + id);
         System.out.println("需求详情: " + requirementDetails);
         System.out.println("开发人员: " + requirementDetails.getDeveloper());
+        System.out.println("实际上线时间: " + requirementDetails.getActualCompletionDate());
         
         Requirement requirement = requirementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Requirement not found with id: " + id));
@@ -50,6 +51,8 @@ public class RequirementController {
         requirement.setDueDate(requirementDetails.getDueDate());
         requirement.setEstimatedCompletionDate(requirementDetails.getEstimatedCompletionDate());
         requirement.setDeveloper(requirementDetails.getDeveloper());
+        requirement.setActualCompletionDate(requirementDetails.getActualCompletionDate());
+        
         System.out.println("设置开发人员后的需求: " + requirement);
 
         Requirement updatedRequirement = requirementRepository.save(requirement);

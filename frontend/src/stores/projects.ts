@@ -29,22 +29,13 @@ export const useProjectStore = defineStore('projects', () => {
       
       // 直接使用response，因为axios拦截器已经处理了data的提取
       projects.value = response.map((item: any) => {
-        // 尝试从备注中提取实际上线时间
-        let actualTime = '';
-        if (item.notes && item.notes.includes('实际上线时间:')) {
-          const match = item.notes.match(/实际上线时间:\s*([\d-]+)/);
-          if (match && match[1]) {
-            actualTime = match[1];
-          }
-        }
-        
         return {
           ...item,
           inDevelopment: item.status === 'IN_DEVELOPMENT',
           // 将后端的estimatedCompletionDate映射到前端的estimatedTime
           estimatedTime: item.estimatedCompletionDate,
-          // 使用从备注中提取的实际上线时间
-          actualTime: actualTime
+          // 使用从后端接收到的actualCompletionDate字段
+          actualTime: item.actualCompletionDate
         };
       })
       
@@ -132,7 +123,19 @@ export const useProjectStore = defineStore('projects', () => {
   const updateProject = async (project: Project) => {
     try {
       console.log('开始更新需求，项目数据:', project)
-      const response = await api.put(`/api/requirements/${project.id}`, project)
+      
+      // 准备提交到后端的数据
+      const projectData = {
+        ...project,
+        // 将前端的estimatedTime映射到后端的estimatedCompletionDate
+        estimatedCompletionDate: project.estimatedTime,
+        // 将前端的actualTime映射到后端的actualCompletionDate
+        actualCompletionDate: project.actualTime
+      }
+      
+      console.log('提交到后端的数据:', projectData)
+      
+      const response = await api.put(`/api/requirements/${project.id}`, projectData)
       console.log('更新API响应:', response)
       
       if (response.status === 200) {

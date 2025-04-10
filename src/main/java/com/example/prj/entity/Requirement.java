@@ -36,4 +36,6 @@ public class Requirement {
     private LocalDate dueDate;
     
     private LocalDate estimatedCompletionDate;
+    
+    private LocalDate actualCompletionDate;
 } 
