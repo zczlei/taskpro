@@ -150,9 +150,9 @@ const handleLogin = async () => {
       })
       
       // 保存token和用户信息
-      localStorage.setItem('token', response.data.token)
-      localStorage.setItem('username', response.data.username)
-      localStorage.setItem('name', response.data.name)
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('username', response.username)
+      localStorage.setItem('name', response.name)
       
       ElMessage.success('登录成功')
       router.push('/personal-tasks')

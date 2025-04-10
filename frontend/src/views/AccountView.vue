@@ -167,6 +167,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import SideBar from '@/components/SideBar.vue'
+import axios from '@/services/api'
 
 // 搜索表单
 const searchForm = reactive({
@@ -176,30 +177,27 @@ const searchForm = reactive({
 
 // 账号列表数据
 const loading = ref(false)
-const accountList = ref([
-  {
-    id: 1,
-    username: 'admin',
-    name: '管理员',
-    email: 'admin@example.com',
-    phone: '13800138000',
-    department: '技术部',
-    position: '开发工程师',
-    createTime: '2024-03-20 10:00:00'
-  }
-])
+const accountList = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
 // 加载账号列表
-const loadAccountList = () => {
+const loadAccountList = async () => {
   loading.value = true
-  // 模拟API调用
-  setTimeout(() => {
+  try {
+    const response = await axios.get('/api/users')
+    accountList.value = response.map(user => ({
+      ...user,
+      createTime: user.createTime ? new Date(user.createTime).toLocaleString() : '-'
+    }))
     total.value = accountList.value.length
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    ElMessage.error('获取用户列表失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 搜索
@@ -281,11 +279,7 @@ const showAddDialog = () => {
 // 显示编辑对话框
 const handleEdit = (row) => {
   dialogType.value = 'edit'
-  Object.keys(accountForm).forEach(key => {
-    if (key !== 'password') {
-      accountForm[key] = row[key]
-    }
-  })
+  Object.assign(accountForm, {...row})
   dialogVisible.value = true
 }
 
@@ -293,33 +287,28 @@ const handleEdit = (row) => {
 const handleSubmit = async () => {
   if (!accountFormRef.value) return
   
-  await accountFormRef.value.validate((valid) => {
+  await accountFormRef.value.validate(async (valid) => {
     if (valid) {
-      // 模拟API调用
-      setTimeout(() => {
+      try {
         if (dialogType.value === 'add') {
           // 新增账号
-          const newAccount = {
-            ...accountForm,
-            id: accountList.value.length + 1,
-            createTime: new Date().toLocaleString()
-          }
-          accountList.value.push(newAccount)
-          ElMessage.success('添加成功')
+          await axios.post('/api/users/register', accountForm)
+          ElMessage.success('添加账号成功')
         } else {
           // 编辑账号
-          const index = accountList.value.findIndex(item => item.id === accountForm.id)
-          if (index !== -1) {
-            accountList.value[index] = {
-              ...accountList.value[index],
-              ...accountForm
-            }
-          }
-          ElMessage.success('修改成功')
+          await axios.put(`/api/users/${accountForm.id}`, accountForm)
+          ElMessage.success('更新账号成功')
         }
         dialogVisible.value = false
         loadAccountList()
-      }, 500)
+      } catch (error) {
+        console.error('操作失败:', error)
+        if (error.response?.status === 400) {
+          ElMessage.error(error.response.data || '操作失败')
+        } else {
+          ElMessage.error('操作失败，请稍后重试')
+        }
+      }
     }
   })
 }
@@ -327,23 +316,26 @@ const handleSubmit = async () => {
 // 删除账号
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    '确定要删除该账号吗？',
+    `确定要删除账号 ${row.username} 吗？`,
     '警告',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     }
-  ).then(() => {
-    // 模拟API调用
-    setTimeout(() => {
-      const index = accountList.value.findIndex(item => item.id === row.id)
-      if (index !== -1) {
-        accountList.value.splice(index, 1)
-      }
+  )
+  .then(async () => {
+    try {
+      await axios.delete(`/api/users/${row.id}`)
       ElMessage.success('删除成功')
       loadAccountList()
-    }, 500)
+    } catch (error) {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
+  })
+  .catch(() => {
+    // 取消删除
   })
 }
 
@@ -355,14 +347,16 @@ const resetPasswordForm = reactive({
   password: '',
   confirmPassword: ''
 })
+const currentUser = ref(null)
 
+// 重置密码规则
 const resetPasswordRules = {
   password: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: '请确认新密码', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (value !== resetPasswordForm.password) {
@@ -376,23 +370,31 @@ const resetPasswordRules = {
   ]
 }
 
+// 显示重置密码对话框
 const handleResetPassword = (row) => {
+  currentUser.value = row
   resetPasswordForm.userId = row.id
   resetPasswordForm.password = ''
   resetPasswordForm.confirmPassword = ''
   resetPasswordVisible.value = true
 }
 
+// 提交重置密码
 const handleResetPasswordSubmit = async () => {
   if (!resetPasswordFormRef.value) return
   
-  await resetPasswordFormRef.value.validate((valid) => {
+  await resetPasswordFormRef.value.validate(async (valid) => {
     if (valid) {
-      // 模拟API调用
-      setTimeout(() => {
+      try {
+        await axios.post(`/api/users/${resetPasswordForm.userId}/reset-password`, {
+          password: resetPasswordForm.password
+        })
         ElMessage.success('密码重置成功')
         resetPasswordVisible.value = false
-      }, 500)
+      } catch (error) {
+        console.error('密码重置失败:', error)
+        ElMessage.error('密码重置失败，请稍后重试')
+      }
     }
   })
 }
