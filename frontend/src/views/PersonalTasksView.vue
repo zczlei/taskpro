@@ -47,6 +47,9 @@
                   <div class="task-content">
                     <div class="task-title">{{ task.name }}</div>
                     <div class="task-description">{{ task.description }}</div>
+                    <div v-if="task.imagePath" class="task-image">
+                      <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
+                    </div>
                     <div class="task-meta">
                       <el-tag :type="getPriorityType(task.priority)" size="small">
                         {{ getPriorityLabel(task.priority) }}
@@ -78,6 +81,9 @@
                   <div class="task-content">
                     <div class="task-title">{{ task.name }}</div>
                     <div class="task-description">{{ task.description }}</div>
+                    <div v-if="task.imagePath" class="task-image">
+                      <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
+                    </div>
                     <div class="task-meta">
                       <el-tag :type="getPriorityType(task.priority)" size="small">
                         {{ getPriorityLabel(task.priority) }}
@@ -109,6 +115,9 @@
                   <div class="task-content">
                     <div class="task-title">{{ task.name }}</div>
                     <div class="task-description">{{ task.description }}</div>
+                    <div v-if="task.imagePath" class="task-image">
+                      <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
+                    </div>
                     <div class="task-meta">
                       <el-tag :type="getPriorityType(task.priority)" size="small">
                         {{ getPriorityLabel(task.priority) }}
@@ -157,6 +166,20 @@
                   placeholder="请输入任务描述"
                 />
               </el-form-item>
+              <el-form-item label="任务图片">
+                <el-upload
+                  class="task-image-upload"
+                  action="/api/files/upload"
+                  :on-success="handleUploadSuccess"
+                  :on-error="handleUploadError"
+                  :before-upload="beforeUpload"
+                  :limit="1"
+                  list-type="picture-card"
+                  :file-list="fileList"
+                >
+                  <el-icon><Plus /></el-icon>
+                </el-upload>
+              </el-form-item>
               <el-form-item label="任务状态" prop="status">
                 <el-select 
                   v-model="taskForm.status" 
@@ -195,6 +218,13 @@
       </div>
     </div>
   </div>
+
+  <!-- 图片预览对话框 -->
+  <el-dialog v-model="imagePreviewVisible" title="图片预览" width="50%">
+    <div class="image-preview-container">
+      <img :src="previewImageUrl" alt="任务图片" class="preview-image">
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -202,7 +232,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, List, Timer, User, ArrowLeft, ArrowRight, More, Plus, Check } from '@element-plus/icons-vue'
 import api from '@/api'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, UploadFile, UploadFiles } from 'element-plus'
 
 // 任务列表
 const tasks = ref([])
@@ -226,8 +256,14 @@ const taskForm = ref({
   description: '',
   priority: 'MEDIUM',
   status: 'PENDING',
-  dueDate: ''
+  dueDate: '',
+  imagePath: ''
 })
+
+// 上传相关
+const fileList = ref<UploadFile[]>([])
+const imagePreviewVisible = ref(false)
+const previewImageUrl = ref('')
 
 // 表单校验规则
 const rules = {
@@ -235,6 +271,39 @@ const rules = {
   status: [{ required: true, message: '请选择任务状态', trigger: 'change' }],
   priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
   dueDate: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
+}
+
+// 图片上传前的校验
+const beforeUpload = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+// 图片上传成功回调
+const handleUploadSuccess = (response, file) => {
+  taskForm.value.imagePath = response.fileUrl
+  ElMessage.success('图片上传成功')
+}
+
+// 图片上传失败回调
+const handleUploadError = () => {
+  ElMessage.error('图片上传失败')
+}
+
+// 图片预览
+const previewImage = (url) => {
+  previewImageUrl.value = url
+  imagePreviewVisible.value = true
 }
 
 // 获取优先级标签和类型
@@ -289,7 +358,8 @@ const showAddDialog = (status: string) => {
     description: '',
     priority: 'MEDIUM',
     status: status,
-    dueDate: ''
+    dueDate: '',
+    imagePath: ''
   }
   dialogTitle.value = '新增任务'
   dialogVisible.value = true
@@ -305,7 +375,8 @@ const showGlobalAddDialog = () => {
     description: '',
     priority: 'MEDIUM',
     status: 'PENDING',
-    dueDate: ''
+    dueDate: '',
+    imagePath: ''
   }
   dialogTitle.value = '新增任务'
   dialogVisible.value = true
@@ -319,6 +390,18 @@ const handleEdit = (row) => {
     ...row,
     dueDate: row.dueDate ? new Date(row.dueDate) : ''
   }
+  
+  // 重置文件列表
+  fileList.value = []
+  
+  // 如果有图片，添加到文件列表
+  if (row.imagePath) {
+    fileList.value.push({
+      name: row.imagePath.split('/').pop(),
+      url: row.imagePath
+    } as UploadFile)
+  }
+  
   dialogVisible.value = true
 }
 
@@ -788,5 +871,43 @@ onMounted(() => {
 
 :deep(.el-menu-item.is-active .el-icon) {
   color: #1890ff;
+}
+
+/* 添加图片相关样式 */
+.task-image {
+  margin: 10px 0;
+  width: 100%;
+  text-align: center;
+}
+
+.task-image img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.task-image img:hover {
+  transform: scale(1.05);
+}
+
+.image-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.task-image-upload :deep(.el-upload--picture-card) {
+  width: 120px;
+  height: 120px;
+  line-height: 120px;
 }
 </style> 

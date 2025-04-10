@@ -46,6 +46,11 @@ public class PersonalTaskController {
         task.setDescription(taskDetails.getDescription());
         task.setPriority(taskDetails.getPriority());
         task.setDueDate(taskDetails.getDueDate());
+        
+        // 如果提供了图片路径，则更新
+        if (taskDetails.getImagePath() != null) {
+            task.setImagePath(taskDetails.getImagePath());
+        }
 
         PersonalTask updatedTask = personalTaskRepository.save(task);
         return ResponseEntity.ok(updatedTask);

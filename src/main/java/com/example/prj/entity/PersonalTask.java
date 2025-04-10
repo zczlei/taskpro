@@ -19,6 +19,9 @@ public class PersonalTask {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column
+    private String imagePath;
+
     @Column(nullable = false)
     private String priority;
 
