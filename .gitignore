@@ -106,3 +106,4 @@ src/main/resources/application.properties.bak
 
 # Upload directory
 uploads/
+.env
