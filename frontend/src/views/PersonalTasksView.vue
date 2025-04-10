@@ -272,14 +272,14 @@ const rules = {
 // 图片上传前的校验
 const beforeUpload = (file: File) => {
   const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
+  const isLt5M = file.size / 1024 / 1024 < 5
 
   if (!isImage) {
     ElMessage.error('只能上传图片文件!')
     return false
   }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB!')
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB!')
     return false
   }
   return true
