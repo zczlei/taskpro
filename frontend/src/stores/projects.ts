@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '@/api'
 
 export interface Project {
   id: number
-  name: string
-  requirements: string
-  requirementsDetail: string
+  projectName: string
+  description: string
+  details: string
   status: string
   developer: string
   estimatedTime: string
@@ -17,110 +18,138 @@ export interface Project {
 }
 
 export const useProjectStore = defineStore('projects', () => {
-  const projects = ref<Project[]>([
-    {
-      id: 1,
-      name: '诺基亚天气',
-      requirements: '1.增加事件统计\n2.修改定位方式，改成卫星定位\n3.UI需求优化',
-      requirementsDetail: '1. 事件统计需求：\n- 统计用户点击各功能模块的次数\n- 统计用户使用时长\n- 生成统计报表\n\n2. 定位方式改进：\n- 接入卫星定位系统\n- 提高定位精准度\n- 优化定位速度\n\n3. UI优化：\n- 重新设计首页布局\n- 优化天气图标展示\n- 改进用户交互体验',
-      status: '',
-      developer: '',
-      estimatedTime: '',
-      actualTime: '',
-      priority: '中',
-      version: '',
-      notes: '',
-      inDevelopment: false
-    },
-    {
-      id: 2,
-      name: '优米海外天气',
-      requirements: '优米厂商widgets天气风格优化',
-      requirementsDetail: '1. 设计规范：\n- 遵循Material Design设计规范\n- 适配不同尺寸的widgets\n\n2. 功能优化：\n- 支持自定义主题色\n- 添加天气动画效果\n- 优化数据更新机制',
-      status: '开发中',
-      developer: '义军',
-      estimatedTime: '2025/04/11',
-      actualTime: '',
-      priority: '',
-      version: '',
-      notes: '',
-      inDevelopment: true
-    },
-    {
-      id: 3,
-      name: '中兴预装',
-      requirements: '后台修改默认搜索引擎时，如果用户当前是默认认引擎，则生效变更成刚修改后的引擎。如果用户当前不是默认认引擎，则不影响他使用的搜索引擎',
-      requirementsDetail: '1. 搜索引擎切换逻辑：\n- 检测用户当前使用的搜索引擎\n- 判断是否为默认搜索引擎\n- 根据条件决定是否更新\n\n2. 用户体验优化：\n- 添加切换提示\n- 保存用户偏好设置\n- 提供还原选项',
-      status: '测试中',
-      developer: '冬冬',
-      estimatedTime: '2025/04/18',
-      actualTime: '',
-      priority: '低',
-      version: '',
-      notes: '',
-      inDevelopment: false
-    },
-    {
-      id: 4,
-      name: '中兴预装',
-      requirements: '1、信息流支持配置H5\n2、信息流支持机型配置\n3、微米浏览器底部tab可根据机型进行精细化配置',
-      requirementsDetail: '1. H5配置支持：\n- 支持自定义H5页面\n- 配置页面展示规则\n- 支持A/B测试\n\n2. 机型配置：\n- 建立机型数据库\n- 开发配置管理界面\n- 支持批量导入配置\n\n3. Tab配置：\n- 支持自定义Tab样式\n- 根据机型适配Tab布局\n- 提供Tab位置调整功能',
-      status: '测试中',
-      developer: '冬冬',
-      estimatedTime: '2025/04/18',
-      actualTime: '',
-      priority: '低',
-      version: '',
-      notes: '',
-      inDevelopment: false
-    }
-  ])
+  const projects = ref<Project[]>([])
 
-  // 获取未开发的项目
+  // 加载需求列表
+  const loadRequirements = async () => {
+    try {
+      console.log('开始加载需求列表...')
+      const response = await api.get('/api/requirements')
+      console.log('需求列表API响应:', response)
+      
+      // 直接使用response，因为axios拦截器已经处理了data的提取
+      projects.value = response.map((item: any) => ({
+        ...item,
+        inDevelopment: item.status === 'IN_DEVELOPMENT'
+      }))
+      
+      console.log('处理后的需求列表:', projects.value)
+      console.log('开发中的需求:', projects.value.filter(p => p.status === 'IN_DEVELOPMENT'))
+      
+      return projects.value
+    } catch (error) {
+      console.error('加载需求失败:', error)
+      throw error
+    }
+  }
+
+  // 获取未开发的需求
   const getRequirements = computed(() => {
-    return projects.value.filter(p => !p.inDevelopment)
+    return projects.value.filter(p => p.status === 'PENDING')
   })
 
-  // 获取开发中的项目
+  // 获取开发中的需求
   const getInDevelopment = computed(() => {
-    return projects.value.filter(p => p.inDevelopment)
+    const inDevelopment = projects.value.filter(p => p.status === 'IN_DEVELOPMENT')
+    console.log('获取开发中需求，筛选结果:', inDevelopment)
+    return inDevelopment
+  })
+
+  // 获取除了待处理外的所有需求
+  const getNonPendingRequirements = computed(() => {
+    const nonPending = projects.value.filter(p => p.status !== 'PENDING')
+    console.log('获取非待处理需求，筛选结果:', nonPending)
+    return nonPending
   })
 
   // 开始开发项目
-  const startDevelopment = (project: Project, developer: string) => {
-    // 先从未开发列表中删除
-    const index = projects.value.findIndex(p => p.id === project.id)
-    if (index !== -1) {
-      projects.value.splice(index, 1)
+  const startDevelopment = async (project: Project) => {
+    try {
+      console.log('开始提交开发请求，项目数据:', project)
+      
+      // 更新需求状态为开发中
+      const response = await api.put(`/api/requirements/${project.id}`, {
+        ...project,
+        status: 'IN_DEVELOPMENT'
+      })
+      
+      console.log('API响应:', response)
+      
+      // 更新本地状态
+      const index = projects.value.findIndex(p => p.id === project.id)
+      if (index !== -1) {
+        projects.value[index] = {
+          ...project,
+          status: 'IN_DEVELOPMENT'
+        }
+      }
+      console.log('更新后的需求列表:', projects.value)
+      
+      // 重新加载需求列表以确保数据同步
+      await loadRequirements()
+      
+      return response
+    } catch (error: any) {
+      console.error('开始开发失败，详细错误:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      })
+      throw error
     }
-    
-    // 添加到开发中的需求列表
-    projects.value.push({
-      ...project,
-      status: '开发中',
-      developer: developer,
-      inDevelopment: true
-    })
   }
 
   // 添加新项目
-  const addProject = (project: Project) => {
-    projects.value.push(project)
+  const addProject = async (project: Project) => {
+    try {
+      const response = await api.post('/api/requirements', project)
+      if (response.status === 200 || response.status === 201) {
+        await loadRequirements()
+      }
+    } catch (error) {
+      console.error('添加需求失败:', error)
+      throw error
+    }
   }
 
   // 更新项目
-  const updateProject = (project: Project) => {
-    const index = projects.value.findIndex(p => p.id === project.id)
-    if (index !== -1) {
-      projects.value[index] = project
+  const updateProject = async (project: Project) => {
+    try {
+      console.log('开始更新需求，项目数据:', project)
+      const response = await api.put(`/api/requirements/${project.id}`, project)
+      console.log('更新API响应:', response)
+      
+      if (response.status === 200) {
+        const index = projects.value.findIndex(p => p.id === project.id)
+        if (index !== -1) {
+          projects.value[index] = {
+            ...project,
+            // 确保开发人员字段正确保存
+            developer: project.developer || ''
+          }
+        }
+        console.log('本地更新后的项目数据:', projects.value[index])
+      }
+    } catch (error) {
+      console.error('更新需求失败:', error)
+      throw error
     }
   }
 
   // 删除项目
-  const deleteProject = (id: number) => {
-    const index = projects.value.findIndex(p => p.id === id)
-    if (index !== -1) {
-      projects.value.splice(index, 1)
+  const deleteProject = async (id: number) => {
+    try {
+      const response = await api.delete(`/api/requirements/${id}`)
+      if (response.status === 200) {
+        const index = projects.value.findIndex(p => p.id === id)
+        if (index !== -1) {
+          projects.value.splice(index, 1)
+        }
+      }
+    } catch (error) {
+      console.error('删除需求失败:', error)
+      throw error
     }
   }
 
@@ -128,9 +157,11 @@ export const useProjectStore = defineStore('projects', () => {
     projects,
     getRequirements,
     getInDevelopment,
+    getNonPendingRequirements,
     startDevelopment,
     addProject,
     updateProject,
-    deleteProject
+    deleteProject,
+    loadRequirements
   }
 }) 

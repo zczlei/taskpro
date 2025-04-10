@@ -26,7 +26,7 @@ const formRef = ref(null)
 const projectDialogVisible = ref(false)
 
 // 开发分配相关
-const developmentDialogVisible = ref(false)
+const showDevelopmentDialog = ref(false)
 const developmentForm = ref({
   developer: ''
 })
@@ -158,8 +158,12 @@ const getTagType = (value, prop) => {
 const loadRequirements = async () => {
   try {
     loading.value = true
+    // api实例已配置响应拦截器，会自动提取response.data
     const response = await api.get('/api/requirements')
-    requirements.value = response
+    // 过滤出状态为"待处理"(PENDING)的需求
+    requirements.value = Array.isArray(response) 
+      ? response.filter(req => req.status === 'PENDING')
+      : []
   } catch (error) {
     console.error('加载需求列表失败:', error)
     ElMessage.error('加载需求列表失败')
@@ -311,54 +315,42 @@ const projectStore = useProjectStore()
 const handleDevelopment = async (row) => {
   currentRequirement.value = row
   developmentForm.value.developer = ''
-  developmentDialogVisible.value = true
+  showDevelopmentDialog.value = true
 }
 
 // 提交开发分配
 const handleDevelopmentSubmit = async () => {
-  if (!developmentForm.value.developer) {
-    ElMessage.warning('请选择开发人员')
-    return
-  }
-
-  if (!currentRequirement.value) {
-    ElMessage.warning('需求数据异常')
-    return
-  }
-
   try {
-    loading.value = true
+    if (!currentRequirement.value) {
+      ElMessage.warning('当前没有选中的需求')
+      return
+    }
     
-    // 创建进度页面需要的项目对象
+    if (!developmentForm.value.developer) {
+      ElMessage.warning('请选择开发人员')
+      return
+    }
+    
     const progressProject = {
-      id: currentRequirement.value.id,
-      name: currentRequirement.value.projectName,
-      requirements: currentRequirement.value.description,
-      requirementsDetail: currentRequirement.value.details,
-      status: '开发中',
+      ...currentRequirement.value,  // 保留原有的所有字段
+      status: 'IN_DEVELOPMENT',
       developer: developmentForm.value.developer,
-      estimatedTime: '',
-      actualTime: '',
-      priority: currentRequirement.value.priority,
-      version: '',
-      notes: '',
-      inDevelopment: true
+      startDate: new Date().toISOString()
     }
 
-    // 先删除原始需求
-    await api.delete(`/api/requirements/${currentRequirement.value.id}`)
-    
-    // 使用 store 的方法来更新状态
-    projectStore.startDevelopment(progressProject, developmentForm.value.developer)
-    
+    console.log('准备提交的项目数据:', progressProject)
+    await projectStore.startDevelopment(progressProject)
     ElMessage.success('开发分配成功')
-    developmentDialogVisible.value = false
-    await loadRequirements() // 刷新数据
-  } catch (error) {
-    console.error('分配开发失败:', error)
-    ElMessage.error('分配开发失败')
-  } finally {
-    loading.value = false
+    showDevelopmentDialog.value = false
+    developmentForm.value.developer = ''
+    
+    // 刷新需求列表
+    await loadRequirements()
+    
+  } catch (error: any) {
+    console.error('提交开发失败:', error)
+    const errorMessage = error.response?.data?.message || error.message || '提交开发失败'
+    ElMessage.error(errorMessage)
   }
 }
 
@@ -407,6 +399,14 @@ onMounted(() => {
             style="width: 100%"
             v-loading="loading"
           >
+            <!-- 添加序号列 -->
+            <el-table-column 
+              label="序号" 
+              prop="id" 
+              width="80"
+              fixed="left"
+            />
+            
             <template v-for="field in visibleFields" :key="field.prop">
               <el-table-column 
                 :label="field.label" 
@@ -540,7 +540,7 @@ onMounted(() => {
           <!-- 开发分配对话框 -->
           <el-dialog
             title="分配开发人员"
-            v-model="developmentDialogVisible"
+            v-model="showDevelopmentDialog"
             width="400px"
           >
             <el-form
@@ -556,7 +556,7 @@ onMounted(() => {
             </el-form>
             <template #footer>
               <span class="dialog-footer">
-                <el-button @click="developmentDialogVisible = false">取消</el-button>
+                <el-button @click="showDevelopmentDialog = false">取消</el-button>
                 <el-button type="primary" @click="handleDevelopmentSubmit">确定</el-button>
               </span>
             </template>
