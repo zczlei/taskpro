@@ -50,6 +50,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Key } from '@element-plus/icons-vue'
+import api from '../services/api'
 
 const router = useRouter()
 const loginFormRef = ref()
@@ -140,33 +141,33 @@ const handleLogin = async () => {
 
     loading.value = true
     
-    // 模拟登录请求
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 验证用户名和密码
-    const validUsers = [
-      { username: 'admin', password: '123456' },
-      { username: 'zhaolei@umeweb.com', password: '123456' }
-    ]
-    
-    const user = validUsers.find(u => 
-      u.username === loginForm.username && 
-      u.password === loginForm.password
-    )
-    
-    if (user) {
-      // 登录成功
-      localStorage.setItem('token', 'dummy-token')
-      localStorage.setItem('username', user.username)
+    // 调用后端登录API
+    try {
+      const response = await api.post('/api/auth/login', {
+        username: loginForm.username,
+        password: loginForm.password,
+        captcha: loginForm.captcha
+      })
+      
+      // 保存token和用户信息
+      localStorage.setItem('token', response.data.token)
+      localStorage.setItem('username', response.data.username)
+      localStorage.setItem('name', response.data.name)
+      
       ElMessage.success('登录成功')
       router.push('/personal-tasks')
-    } else {
-      ElMessage.error('用户名或密码错误')
+    } catch (error) {
+      console.error('登录失败:', error)
+      if (error.response?.status === 401) {
+        ElMessage.error('用户名或密码错误')
+      } else {
+        ElMessage.error('登录失败，请稍后重试')
+      }
       generateCaptcha()
     }
   } catch (error) {
-    console.error('登录失败:', error)
-    ElMessage.error('登录失败')
+    console.error('表单验证失败:', error)
+    ElMessage.error('请检查输入信息')
   } finally {
     loading.value = false
   }

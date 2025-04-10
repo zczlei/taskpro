@@ -1,21 +1,15 @@
-package com.example.prj;
+package com.example.prj.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Configuration;
 import java.io.File;
+import javax.annotation.PostConstruct;
 
-@SpringBootApplication
-public class PrjApplication {
-    public static void main(String[] args) {
-        // 在启动应用前先加载环境变量
-        loadEnvVariables();
-        
-        // 启动应用
-        SpringApplication.run(PrjApplication.class, args);
-    }
-    
-    private static void loadEnvVariables() {
+@Configuration
+public class DotenvConfig {
+
+    @PostConstruct
+    public void init() {
         try {
             // 检查.env文件是否存在
             File envFile = new File(".env");
@@ -29,21 +23,21 @@ public class PrjApplication {
                 
                 // 设置环境变量
                 String url = dotenv.get("MYSQL_URL");
-                if (url != null && !url.isEmpty()) {
-                    System.setProperty("spring.datasource.url", url);
-                    System.out.println("已设置spring.datasource.url: " + url);
+                if (url != null) {
+                    System.setProperty("MYSQL_URL", url);
+                    System.out.println("已设置MYSQL_URL: " + url);
                 }
                 
                 String username = dotenv.get("MYSQL_USERNAME");
-                if (username != null && !username.isEmpty()) {
-                    System.setProperty("spring.datasource.username", username);
-                    System.out.println("已设置spring.datasource.username: " + username);
+                if (username != null) {
+                    System.setProperty("MYSQL_USERNAME", username);
+                    System.out.println("已设置MYSQL_USERNAME: " + username);
                 }
                 
                 String password = dotenv.get("MYSQL_PASSWORD");
-                if (password != null && !password.isEmpty()) {
-                    System.setProperty("spring.datasource.password", password);
-                    System.out.println("已设置spring.datasource.password: " + password);
+                if (password != null) {
+                    System.setProperty("MYSQL_PASSWORD", password);
+                    System.out.println("已设置MYSQL_PASSWORD: " + password);
                 }
                 
                 System.out.println("环境变量已从.env文件加载完成");
