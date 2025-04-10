@@ -51,8 +51,10 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Key } from '@element-plus/icons-vue'
 import api from '../services/api'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loginFormRef = ref()
 const captchaCanvas = ref()
 const loading = ref(false)
@@ -149,10 +151,17 @@ const handleLogin = async () => {
         captcha: loginForm.captcha
       })
       
-      // 保存token和用户信息
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('username', response.username)
-      localStorage.setItem('name', response.name)
+      // 判断是否是管理员
+      const isAdmin = loginForm.username === 'admin'
+      const role = isAdmin ? 'admin' : 'user'
+      
+      // 使用Store保存用户信息
+      userStore.setUser({
+        username: response.username || loginForm.username,
+        name: response.name || loginForm.username,
+        role: role,
+        token: response.token
+      })
       
       ElMessage.success('登录成功')
       router.push('/personal-tasks')

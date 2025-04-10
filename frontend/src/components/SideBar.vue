@@ -20,7 +20,7 @@
         <el-icon><Timer /></el-icon>
         <span>需求进度</span>
       </el-menu-item>
-      <el-menu-item index="/account">
+      <el-menu-item v-if="userStore.isAdmin" index="/account">
         <el-icon><User /></el-icon>
         <span>账号管理</span>
       </el-menu-item>
@@ -30,6 +30,9 @@
 
 <script setup lang="ts">
 import { Document, List, Timer, User } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 </script>
 
 <style scoped>

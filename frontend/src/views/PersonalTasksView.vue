@@ -2,29 +2,7 @@
   <MainLayout>
     <div class="app-container">
       <!-- 左侧菜单 -->
-      <div class="sidebar">
-        <div class="sidebar-header">
-          <!-- 移除这里的标题文字 -->
-        </div>
-        <el-menu default-active="/personal-tasks" router>
-          <el-menu-item index="/">
-            <el-icon><Document /></el-icon>
-            <span>项目需求</span>
-          </el-menu-item>
-          <el-menu-item index="/personal-tasks">
-            <el-icon><List /></el-icon>
-            <span>个人任务</span>
-          </el-menu-item>
-          <el-menu-item index="progress">
-            <el-icon><Timer /></el-icon>
-            <span>项目进度</span>
-          </el-menu-item>
-          <el-menu-item index="/account">
-            <el-icon><User /></el-icon>
-            <span>账号管理</span>
-          </el-menu-item>
-        </el-menu>
-      </div>
+      <SideBar />
 
       <!-- 主要内容区域 -->
       <div class="main-content">
@@ -236,6 +214,11 @@ import { Document, List, Timer, User, ArrowLeft, ArrowRight, More, Plus, Check }
 import api from '@/api'
 import type { FormInstance, UploadFile, UploadFiles } from 'element-plus'
 import MainLayout from '@/layouts/MainLayout.vue'
+import { useUserStore } from '@/stores/user'
+import SideBar from '@/components/SideBar.vue'
+
+// 使用用户Store
+const userStore = useUserStore()
 
 // 任务列表
 const tasks = ref([])
@@ -340,7 +323,23 @@ const loadTasks = async () => {
   try {
     loading.value = true
     const response = await api.get('/api/personal-tasks')
+    
+    // 暂时处理：由于后端尚未添加创建者信息，先显示所有任务
     tasks.value = response
+    
+    // 后面可以使用下面的代码进行过滤（需要后端支持）
+    // 过滤任务，仅显示当前用户的任务，除非是管理员
+    /*
+    if (userStore.isAdmin) {
+      tasks.value = response // 管理员可以查看所有任务
+    } else {
+      // 普通用户只能查看自己创建的任务
+      tasks.value = response.filter(task => 
+        task.creator === userStore.username || 
+        task.createdBy === userStore.username
+      )
+    }
+    */
   } catch (error) {
     console.error('加载任务列表失败:', error)
     ElMessage.error('加载任务列表失败')
@@ -468,26 +467,32 @@ const handleReopen = async (row) => {
   }
 }
 
-// 处理保存
+// 保存任务
 const handleSave = async () => {
   if (!taskFormRef.value) return
   
   try {
     await taskFormRef.value.validate()
     
-    // 处理日期格式
-    const formData = {
+    // 添加当前用户信息
+    const taskData = {
       ...taskForm.value,
+      creator: userStore.username, // 添加创建者信息
+      creatorName: userStore.name || userStore.username,
+      // 处理日期格式
       dueDate: taskForm.value.dueDate ? new Date(taskForm.value.dueDate).toISOString().split('T')[0] : null
     }
     
-    if (isEdit.value) {
-      await api.put(`/api/personal-tasks/${formData.id}`, formData)
+    if (isEdit.value && taskForm.value.id) {
+      // 编辑现有任务
+      await api.put(`/api/personal-tasks/${taskForm.value.id}`, taskData)
+      ElMessage.success('任务更新成功')
     } else {
-      await api.post('/api/personal-tasks', formData)
+      // 创建新任务
+      await api.post('/api/personal-tasks', taskData)
+      ElMessage.success('任务创建成功')
     }
     
-    ElMessage.success(isEdit.value ? '更新成功' : '添加成功')
     dialogVisible.value = false
     loadTasks()
   } catch (error) {

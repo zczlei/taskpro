@@ -21,14 +21,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { User, SwitchButton } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-const username = ref('')
-
-onMounted(() => {
-  // 从localStorage获取用户名
-  username.value = localStorage.getItem('name') || localStorage.getItem('username') || ''
-})
+const userStore = useUserStore()
+const username = ref(userStore.name || userStore.username)
 
 // 退出登录
 const handleLogout = () => {
@@ -37,10 +34,8 @@ const handleLogout = () => {
     cancelButtonText: '取消',
     type: 'warning',
   }).then(() => {
-    // 清除所有localStorage中的用户信息
-    localStorage.removeItem('token')
-    localStorage.removeItem('username')
-    localStorage.removeItem('name')
+    // 清除所有用户信息
+    userStore.clearUser()
     
     // 提示用户已退出
     ElMessage.success('已退出登录')
