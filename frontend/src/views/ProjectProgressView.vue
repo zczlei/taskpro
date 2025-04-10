@@ -5,12 +5,12 @@
       <div class="page-container">
         <div class="progress-container">
           <div class="page-header">
-            <h2 class="page-title">需求进度</h2>
+            <h2 class="page-title">需求进度跟踪</h2>
           </div>
 
           <!-- 项目列表 -->
           <el-table
-            :data="projectList"
+            :data="displayProjects"
             style="width: 100%"
             border
             stripe
@@ -18,9 +18,9 @@
           >
             <el-table-column type="selection" width="55" />
             <el-table-column prop="id" label="序号" width="80" />
-            <el-table-column prop="name" label="项目" min-width="150" />
-            <el-table-column prop="requirements" label="需求" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="requirementsDetail" label="需求详细描述" min-width="300">
+            <el-table-column prop="projectName" label="项目" min-width="150" />
+            <el-table-column prop="description" label="需求" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="details" label="需求详细描述" min-width="300">
               <template #default="scope">
                 <el-button type="primary" link @click="showDetailDialog(scope.row)">
                   查看详情
@@ -33,7 +33,7 @@
                   :type="getStatusType(scope.row.status)"
                   effect="light"
                 >
-                  {{ scope.row.status }}
+                  {{ getStatusText(scope.row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -55,12 +55,24 @@
                   :type="getPriorityType(scope.row.priority)"
                   effect="plain"
                 >
-                  {{ scope.row.priority }}
+                  {{ getPriorityText(scope.row.priority) }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="version" label="版本号" width="100" />
             <el-table-column prop="notes" label="备注" min-width="150" show-overflow-tooltip />
+            
+            <!-- 操作列 -->
+            <el-table-column label="操作" width="150" fixed="right">
+              <template #default="scope">
+                <el-button type="primary" size="small" link @click="handleEdit(scope.row)">
+                  编辑
+                </el-button>
+                <el-button type="danger" size="small" link @click="handleDelete(scope.row)">
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
           </el-table>
 
           <!-- 分页 -->
@@ -98,7 +110,7 @@
             <div class="detail-item">
               <label>开发状态：</label>
               <el-tag :type="getStatusType(selectedProject.status)" effect="light">
-                {{ selectedProject.status }}
+                {{ getStatusText(selectedProject.status) }}
               </el-tag>
             </div>
             <div class="detail-item">
@@ -114,6 +126,103 @@
             </span>
           </template>
         </el-dialog>
+
+        <!-- 编辑需求对话框 -->
+        <el-dialog
+          :title="editDialogTitle"
+          v-model="editDialogVisible"
+          width="60%"
+        >
+          <el-form
+            ref="editFormRef"
+            :model="editForm"
+            label-width="120px"
+            :rules="formRules"
+          >
+            <el-form-item label="项目名称" prop="projectName">
+              <el-input v-model="editForm.projectName" />
+            </el-form-item>
+            <el-form-item label="需求" prop="description">
+              <el-input v-model="editForm.description" />
+            </el-form-item>
+            <el-form-item label="需求详细描述" prop="details">
+              <el-input v-model="editForm.details" type="textarea" :rows="4" />
+            </el-form-item>
+            <el-form-item label="开发状态" prop="status">
+              <el-select v-model="editForm.status" style="width: 100%">
+                <el-option label="开发中" value="IN_DEVELOPMENT" />
+                <el-option label="已完成" value="COMPLETED" />
+                <el-option label="已取消" value="CANCELLED" />
+                <el-option label="待处理" value="PENDING" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="开发人员" prop="developer">
+              <div class="developer-select-container">
+                <el-select v-model="editForm.developer" style="width: 100%">
+                  <el-option
+                    v-for="dev in developerList"
+                    :key="dev"
+                    :label="dev"
+                    :value="dev"
+                  />
+                </el-select>
+                <el-button type="primary" @click="showDeveloperConfig" size="small">配置</el-button>
+              </div>
+            </el-form-item>
+            <el-form-item label="优先级" prop="priority">
+              <el-select v-model="editForm.priority" style="width: 100%">
+                <el-option label="高" value="HIGH" />
+                <el-option label="中" value="MEDIUM" />
+                <el-option label="低" value="LOW" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="版本号" prop="version">
+              <el-input v-model="editForm.version" />
+            </el-form-item>
+            <el-form-item label="备注" prop="notes">
+              <el-input v-model="editForm.notes" type="textarea" :rows="3" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button @click="editDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
+            </span>
+          </template>
+        </el-dialog>
+
+        <!-- 开发人员配置对话框 -->
+        <el-dialog
+          title="开发人员配置"
+          v-model="developerConfigVisible"
+          width="500px"
+        >
+          <div class="developer-config">
+            <div class="developer-header">
+              <el-button type="primary" @click="addDeveloper">添加开发人员</el-button>
+            </div>
+            <el-table :data="developerList" border style="width: 100%">
+              <el-table-column label="开发人员">
+                <template #default="{ row, $index }">
+                  <el-input v-model="developerList[$index]" placeholder="请输入开发人员姓名" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100">
+                <template #default="{ $index }">
+                  <el-button type="danger" link @click="removeDeveloper($index)">
+                    删除
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="dialog-footer" style="margin-top: 20px;">
+              <el-button @click="developerConfigVisible = false">取消</el-button>
+              <el-button type="primary" @click="saveDeveloperConfig">
+                确定
+              </el-button>
+            </div>
+          </div>
+        </el-dialog>
       </div>
     </div>
   </div>
@@ -123,6 +232,7 @@
 import { ref, onMounted, computed } from 'vue'
 import SideBar from '@/components/SideBar.vue'
 import { useProjectStore, type Project } from '@/stores/projects'
+import { ElMessageBox, ElMessage } from 'element-plus'
 
 // 获取项目store
 const projectStore = useProjectStore()
@@ -130,6 +240,9 @@ const projectStore = useProjectStore()
 // 项目列表数据
 const loading = ref(false)
 const detailDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const saveLoading = ref(false)
+const editFormRef = ref(null)
 const selectedProject = ref<Project>({
   id: 0,
   name: '',
@@ -143,19 +256,41 @@ const selectedProject = ref<Project>({
   version: '',
   notes: ''
 })
+const editForm = ref({
+  id: 0,
+  projectName: '',
+  description: '',
+  details: '',
+  status: '',
+  developer: '',
+  priority: '',
+  version: '',
+  notes: ''
+})
+const editDialogTitle = ref('编辑需求')
+const developerConfigVisible = ref(false)
+const developerList = ref<string[]>(['义军', '冬冬'])
 
 // 获取开发中的项目列表
-const projectList = computed(() => projectStore.getInDevelopment)
+const projectList = computed(() => projectStore.getNonPendingRequirements)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 计算分页后的项目列表
+const displayProjects = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return projectList.value.slice(start, end)
+})
+
 // 获取状态对应的类型
 const getStatusType = (status: string) => {
   const statusMap = {
-    '开发中': 'success',
-    '测试中': 'warning',
-    '已完成': 'info'
+    'IN_DEVELOPMENT': 'warning',
+    'COMPLETED': 'success',
+    'CANCELLED': 'info',
+    'PENDING': 'info'
   }
   return statusMap[status] || 'info'
 }
@@ -163,11 +298,32 @@ const getStatusType = (status: string) => {
 // 获取优先级对应的类型
 const getPriorityType = (priority: string) => {
   const priorityMap = {
-    '高': 'danger',
-    '中': 'warning',
-    '低': 'info'
+    'HIGH': 'danger',
+    'MEDIUM': 'warning',
+    'LOW': 'info'
   }
   return priorityMap[priority] || 'info'
+}
+
+// 获取状态显示文本
+const getStatusText = (status: string) => {
+  const statusMap = {
+    'IN_DEVELOPMENT': '开发中',
+    'COMPLETED': '已完成',
+    'CANCELLED': '已取消',
+    'PENDING': '待处理'
+  }
+  return statusMap[status] || status
+}
+
+// 获取优先级显示文本
+const getPriorityText = (priority: string) => {
+  const priorityMap = {
+    'HIGH': '高',
+    'MEDIUM': '中',
+    'LOW': '低'
+  }
+  return priorityMap[priority] || priority
 }
 
 // 显示详情对话框
@@ -179,10 +335,11 @@ const showDetailDialog = (project: Project) => {
 // 加载项目列表
 const loadProjectList = () => {
   loading.value = true
-  setTimeout(() => {
+  try {
     total.value = projectList.value.length
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 分页处理
@@ -196,9 +353,125 @@ const handleCurrentChange = (val: number) => {
   loadProjectList()
 }
 
+// 编辑需求
+const handleEdit = (row: Project) => {
+  editForm.value = { ...row }
+  editDialogVisible.value = true
+}
+
+// 删除需求
+const handleDelete = async (row: Project) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除该需求吗？此操作不可恢复。',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    loading.value = true
+    await projectStore.deleteProject(Number(row.id))
+    ElMessage.success('删除成功')
+    await projectStore.loadRequirements()
+    loadProjectList()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除需求失败:', error)
+      ElMessage.error('删除需求失败: ' + (error.message || '未知错误'))
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 表单校验规则
+const formRules = {
+  projectName: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
+  description: [{ required: true, message: '请输入需求描述', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择开发状态', trigger: 'change' }]
+}
+
+// 保存需求
+const handleSave = async () => {
+  if (!editFormRef.value) return
+  
+  try {
+    await editFormRef.value.validate()
+    
+    saveLoading.value = true
+    // 打印保存前的数据，检查developer字段
+    console.log('保存前数据:', editForm.value)
+    
+    // 确保正确更新项目
+    await projectStore.updateProject({
+      ...editForm.value,
+      // 确保developer字段正确设置
+      developer: editForm.value.developer || ''
+    })
+    
+    ElMessage.success('保存成功')
+    editDialogVisible.value = false
+    await projectStore.loadRequirements()
+    loadProjectList()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('保存需求失败:', error)
+      ElMessage.error('保存需求失败: ' + (error.message || '未知错误'))
+    }
+  } finally {
+    saveLoading.value = false
+  }
+}
+
+// 显示开发人员配置对话框
+const showDeveloperConfig = () => {
+  developerConfigVisible.value = true
+}
+
+// 添加开发人员
+const addDeveloper = () => {
+  developerList.value.push('')
+}
+
+// 移除开发人员
+const removeDeveloper = (index: number) => {
+  developerList.value.splice(index, 1)
+}
+
+// 保存开发人员配置
+const saveDeveloperConfig = () => {
+  // 过滤掉空的开发人员
+  developerList.value = developerList.value.filter(dev => dev.trim() !== '')
+  // 去重
+  developerList.value = [...new Set(developerList.value)]
+  developerConfigVisible.value = false
+  
+  // 保存到本地存储
+  localStorage.setItem('developerList', JSON.stringify(developerList.value))
+}
+
 // 页面加载时获取数据
-onMounted(() => {
-  loadProjectList()
+onMounted(async () => {
+  loading.value = true
+  try {
+    // 从本地存储加载开发人员列表
+    const storedDevelopers = localStorage.getItem('developerList')
+    if (storedDevelopers) {
+      developerList.value = JSON.parse(storedDevelopers)
+    }
+    
+    console.log('正在加载需求列表...')
+    await projectStore.loadRequirements()
+    console.log('需求列表加载完成，非待处理的需求:', projectStore.getNonPendingRequirements)
+    loadProjectList()
+  } catch (error) {
+    console.error('加载需求列表失败:', error)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
@@ -294,6 +567,22 @@ onMounted(() => {
   white-space: pre-line;
   color: #303133;
   line-height: 1.6;
+}
+
+.developer-select-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.developer-select-container .el-select {
+  flex: 1;
+}
+
+.developer-config {
+  .developer-header {
+    margin-bottom: 20px;
+  }
 }
 
 @media screen and (max-width: 768px) {

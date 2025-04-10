@@ -91,12 +91,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useProjectStore } from '@/stores/projects'
 import { ElMessage } from 'element-plus'
 import SideBar from '@/components/SideBar.vue'
-import api from '@/utils/api'
+import api from '@/api'
 
 const projectStore = useProjectStore()
 
-// 需求列表数据
-const requirements = ref([])
+// 加载状态
+const loading = ref(false)
 
 // 开发分配相关
 const developmentDialogVisible = ref(false)
@@ -105,19 +105,17 @@ const developmentForm = ref({
 })
 const currentRequirement = ref(null)
 
-// 处理开发按钮点击
-const handleDevelopment = (row) => {
-  currentRequirement.value = row
-  developmentForm.value.developer = ''
-  developmentDialogVisible.value = true
-}
+// 获取开发中的需求列表
+const tableData = computed(() => {
+  console.log('获取开发中的需求:', projectStore.getInDevelopment)
+  return projectStore.getInDevelopment
+})
 
 // 加载需求列表
 const loadRequirements = async () => {
   try {
     loading.value = true
-    const response = await api.get('/api/requirements')
-    requirements.value = response
+    await projectStore.loadRequirements()
   } catch (error) {
     console.error('加载需求列表失败:', error)
     ElMessage.error('加载需求列表失败')
@@ -144,9 +142,9 @@ const handleDevelopmentSubmit = async () => {
     // 创建进度页面需要的项目对象
     const progressProject = {
       id: currentRequirement.value.id,
-      name: currentRequirement.value.name,
-      requirements: currentRequirement.value.requirements,
-      requirementsDetail: currentRequirement.value.requirementsDetail,
+      projectName: currentRequirement.value.projectName,
+      description: currentRequirement.value.description,
+      details: currentRequirement.value.details,
       status: '开发中',
       developer: developmentForm.value.developer,
       estimatedTime: '',
@@ -157,15 +155,11 @@ const handleDevelopmentSubmit = async () => {
       inDevelopment: true
     }
 
-    // 先删除原始需求
-    await api.delete(`/api/requirements/${currentRequirement.value.id}`)
-    
     // 使用 store 的方法来更新状态
-    projectStore.startDevelopment(progressProject, developmentForm.value.developer)
+    await projectStore.startDevelopment(progressProject)
     
     ElMessage.success('开发分配成功')
     developmentDialogVisible.value = false
-    await loadRequirements() // 刷新数据
   } catch (error) {
     console.error('分配开发失败:', error)
     ElMessage.error('分配开发失败')
@@ -173,20 +167,6 @@ const handleDevelopmentSubmit = async () => {
     loading.value = false
   }
 }
-
-// 获取未开发的需求列表
-const requirementsComputed = computed(() => {
-  return projectStore.getRequirements
-})
-
-// 表格数据
-const tableData = computed(() => {
-  return requirementsComputed.value.map(item => ({
-    ...item,
-    requirementsPreview: item.requirements.split('\n').slice(0, 2).join('\n') + 
-      (item.requirements.split('\n').length > 2 ? '\n...' : '')
-  }))
-})
 
 // 获取状态对应的类型
 const getStatusType = (status: string) => {
@@ -209,9 +189,6 @@ const getPriorityType = (priority: string) => {
   return priorityMap[priority] || ''
 }
 
-// 加载状态
-const loading = ref(false)
-
 // 编辑和删除功能占位
 const handleEdit = (row) => {
   console.log('编辑', row)
@@ -221,9 +198,16 @@ const handleDelete = (row) => {
   console.log('删除', row)
 }
 
+// 处理开发按钮点击
+const handleDevelopment = (row) => {
+  currentRequirement.value = row
+  developmentForm.value.developer = ''
+  developmentDialogVisible.value = true
+}
+
 // 初始加载
-onMounted(() => {
-  loadRequirements()
+onMounted(async () => {
+  await loadRequirements()
 })
 
 // 显示添加对话框
