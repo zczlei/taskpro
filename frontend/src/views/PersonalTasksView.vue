@@ -25,7 +25,9 @@
                   <div v-for="task in pendingTasks" :key="task.id" class="task-card">
                     <div class="task-content">
                       <div class="task-title">{{ task.name }}</div>
-                      <div class="task-description">{{ task.description }}</div>
+                      <div class="task-description">
+                        <MarkdownRenderer :content="task.description" />
+                      </div>
                       <div v-if="task.imagePath" class="task-image">
                         <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
                       </div>
@@ -59,7 +61,9 @@
                   <div v-for="task in inProgressTasks" :key="task.id" class="task-card">
                     <div class="task-content">
                       <div class="task-title">{{ task.name }}</div>
-                      <div class="task-description">{{ task.description }}</div>
+                      <div class="task-description">
+                        <MarkdownRenderer :content="task.description" />
+                      </div>
                       <div v-if="task.imagePath" class="task-image">
                         <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
                       </div>
@@ -93,7 +97,9 @@
                   <div v-for="task in completedTasks" :key="task.id" class="task-card">
                     <div class="task-content">
                       <div class="task-title">{{ task.name }}</div>
-                      <div class="task-description">{{ task.description }}</div>
+                      <div class="task-description">
+                        <MarkdownRenderer :content="task.description" />
+                      </div>
                       <div v-if="task.imagePath" class="task-image">
                         <img :src="task.imagePath" alt="任务图片" @click="previewImage(task.imagePath)">
                       </div>
@@ -142,8 +148,11 @@
                     v-model="taskForm.description" 
                     type="textarea"
                     :rows="3"
-                    placeholder="请输入任务描述"
+                    placeholder="请输入任务描述（支持Markdown语法）"
                   />
+                  <div class="markdown-tips">
+                    支持Markdown语法：**粗体**、*斜体*、# 标题、- 列表、[链接](url)、`代码`等
+                  </div>
                 </el-form-item>
                 <el-form-item label="任务图片">
                   <el-upload
@@ -216,6 +225,7 @@ import type { FormInstance, UploadFile, UploadFiles } from 'element-plus'
 import MainLayout from '@/layouts/MainLayout.vue'
 import { useUserStore } from '@/stores/user'
 import SideBar from '@/components/SideBar.vue'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 // 使用用户Store
 const userStore = useUserStore()
@@ -923,5 +933,17 @@ onMounted(() => {
   width: 120px;
   height: 120px;
   line-height: 120px;
+}
+
+/* Markdown相关样式 */
+.markdown-tips {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.task-description {
+  margin: 8px 0;
 }
 </style> 
