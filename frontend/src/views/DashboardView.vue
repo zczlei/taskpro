@@ -175,19 +175,35 @@ const initStatusChart = () => {
   const option = {
     tooltip: {
       trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
+      formatter: '{a} <br/>{b}: {c} ({d}%)',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      borderColor: '#ddd',
+      borderWidth: 1,
+      textStyle: {
+        color: '#333'
+      }
     },
     legend: {
       orient: 'vertical',
-      left: 10,
-      data: statusData.map(item => item.name)
+      right: 10,
+      top: 'center',
+      data: statusData.map(item => item.name),
+      textStyle: {
+        color: '#606266'
+      }
     },
     series: [
       {
         name: '需求状态',
         type: 'pie',
-        radius: ['50%', '70%'],
+        radius: ['45%', '70%'],
+        center: ['40%', '50%'],
         avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
         label: {
           show: false,
           position: 'center'
@@ -195,15 +211,20 @@ const initStatusChart = () => {
         emphasis: {
           label: {
             show: true,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
           }
         },
         labelLine: {
           show: false
         },
         data: statusData,
-        color: ['#909399', '#E6A23C', '#67C23A', '#909399']
+        color: ['#13c2c2', '#fa8c16', '#52c41a', '#f5222d']
       }
     ]
   }
@@ -226,19 +247,35 @@ const initPriorityChart = () => {
   const option = {
     tooltip: {
       trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
+      formatter: '{a} <br/>{b}: {c} ({d}%)',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      borderColor: '#ddd',
+      borderWidth: 1,
+      textStyle: {
+        color: '#333'
+      }
     },
     legend: {
       orient: 'vertical',
-      left: 10,
-      data: priorityData.map(item => item.name)
+      right: 10,
+      top: 'center',
+      data: priorityData.map(item => item.name),
+      textStyle: {
+        color: '#606266'
+      }
     },
     series: [
       {
         name: '优先级',
         type: 'pie',
-        radius: ['50%', '70%'],
+        radius: ['45%', '70%'],
+        center: ['40%', '50%'],
         avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
         label: {
           show: false,
           position: 'center'
@@ -246,15 +283,20 @@ const initPriorityChart = () => {
         emphasis: {
           label: {
             show: true,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
           }
         },
         labelLine: {
           show: false
         },
         data: priorityData,
-        color: ['#F56C6C', '#E6A23C', '#909399']
+        color: ['#f5222d', '#faad14', '#52c41a']
       }
     ]
   }
@@ -268,49 +310,144 @@ const initTrendChart = () => {
 
   trendChart = echarts.init(trendChartRef.value)
 
-  // 模拟数据 - 实际使用时可以从后端获取真实数据
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月']
-  const newRequirements = [12, 19, 30, 22, 24, 30]
-  const completedRequirements = [5, 10, 15, 20, 18, 25]
+  // 模拟近30天的数据
+  const dates = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - 30 + i + 1)
+    return `${date.getMonth() + 1}/${date.getDate()}`
+  })
+
+  // 模拟数据
+  const completedData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 5))
+  const pendingData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 3 + 1))
+  const developingData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 4 + 2))
 
   const option = {
     title: {
-      text: '需求增长与完成趋势'
+      text: '近30天需求变化趋势',
+      textStyle: {
+        color: '#303133',
+        fontSize: 16
+      },
+      left: 'center'
     },
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      backgroundColor: 'rgba(255,255,255,0.8)',
+      borderColor: '#ddd',
+      borderWidth: 1,
+      textStyle: {
+        color: '#333'
+      },
+      axisPointer: {
+        type: 'shadow'
+      }
     },
     legend: {
-      data: ['新增需求', '完成需求']
+      data: ['已完成', '待处理', '开发中'],
+      bottom: '0%',
+      textStyle: {
+        color: '#606266'
+      }
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '10%',
+      top: '15%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
-      boundaryGap: false,
-      data: months
+      data: dates,
+      axisLine: {
+        lineStyle: {
+          color: '#ddd'
+        }
+      },
+      axisLabel: {
+        color: '#606266',
+        rotate: 45,
+        fontSize: 10
+      }
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      axisLine: {
+        show: false
+      },
+      axisLabel: {
+        color: '#606266'
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#eee'
+        }
+      }
     },
     series: [
       {
-        name: '新增需求',
+        name: '已完成',
         type: 'line',
         stack: 'Total',
-        data: newRequirements,
-        color: '#409EFF'
+        data: completedData,
+        smooth: true,
+        symbol: 'emptyCircle',
+        symbolSize: 8,
+        itemStyle: {
+          color: '#52c41a'
+        },
+        lineStyle: {
+          width: 3
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(82, 196, 26, 0.6)' },
+            { offset: 1, color: 'rgba(82, 196, 26, 0.1)' }
+          ])
+        }
       },
       {
-        name: '完成需求',
+        name: '待处理',
         type: 'line',
         stack: 'Total',
-        data: completedRequirements,
-        color: '#67C23A'
+        data: pendingData,
+        smooth: true,
+        symbol: 'emptyCircle',
+        symbolSize: 8,
+        itemStyle: {
+          color: '#13c2c2'
+        },
+        lineStyle: {
+          width: 3
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(19, 194, 194, 0.6)' },
+            { offset: 1, color: 'rgba(19, 194, 194, 0.1)' }
+          ])
+        }
+      },
+      {
+        name: '开发中',
+        type: 'line',
+        stack: 'Total',
+        data: developingData,
+        smooth: true,
+        symbol: 'emptyCircle',
+        symbolSize: 8,
+        itemStyle: {
+          color: '#fa8c16'
+        },
+        lineStyle: {
+          width: 3
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(250, 140, 22, 0.6)' },
+            { offset: 1, color: 'rgba(250, 140, 22, 0.1)' }
+          ])
+        }
       }
     ]
   }
@@ -347,7 +484,7 @@ onMounted(async () => {
 .app-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: #f5f7fa;
   width: 100vw;
   max-width: 100%;
 }
@@ -364,9 +501,8 @@ onMounted(async () => {
 }
 
 .page-container {
-  background-color: #fff;
+  background-color: #f5f7fa;
   border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
   padding: 24px;
   min-height: calc(100vh - 48px);
   overflow: auto;
@@ -384,22 +520,26 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   width: 100%;
+  background: linear-gradient(135deg, #1890ff, #0050b3);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
 }
 
 .page-title {
   font-size: 24px;
   font-weight: 600;
   margin: 0;
-  color: #1f2f3d;
+  color: #ffffff;
 }
 
 /* 数据卡片样式 */
 .stats-cards {
   display: flex;
   gap: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   flex-wrap: wrap;
   width: 100%;
 }
@@ -408,40 +548,82 @@ onMounted(async () => {
   flex: 1;
   text-align: center;
   min-width: 200px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card:nth-child(1) :deep(.el-card__header) {
+  background: linear-gradient(135deg, #36cfc9, #13c2c2);
+  color: white;
+}
+
+.stats-card:nth-child(2) :deep(.el-card__header) {
+  background: linear-gradient(135deg, #faad14, #fa8c16);
+  color: white;
+}
+
+.stats-card:nth-child(3) :deep(.el-card__header) {
+  background: linear-gradient(135deg, #52c41a, #389e0d);
+  color: white;
+}
+
+.stats-card:nth-child(4) :deep(.el-card__header) {
+  background: linear-gradient(135deg, #722ed1, #531dab);
+  color: white;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: white;
 }
 
 .card-value {
   font-size: 36px;
   font-weight: bold;
   color: #1f2f3d;
-  margin: 10px 0;
+  margin: 15px 0;
 }
 
 .card-desc {
   font-size: 14px;
-  color: #909399;
+  color: #606266;
 }
 
 /* 图表样式 */
 .charts-container {
-  margin-top: 20px;
+  margin-top: 30px;
   width: 100%;
 }
 
 .chart-card {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+  overflow: hidden;
+}
+
+.chart-card :deep(.el-card__header) {
+  background: linear-gradient(135deg, #1890ff, #096dd9);
+  color: white;
+  padding: 15px 20px;
 }
 
 .chart {
   height: 350px;
   width: 100%;
+  padding: 20px;
 }
 
 .trend-chart {
