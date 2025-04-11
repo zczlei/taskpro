@@ -20,6 +20,10 @@
         <el-icon><Timer /></el-icon>
         <span>需求进度</span>
       </el-menu-item>
+      <el-menu-item index="/dashboard">
+        <el-icon><DataLine /></el-icon>
+        <span>数据看板</span>
+      </el-menu-item>
       <el-menu-item v-if="userStore.isAdmin" index="/account">
         <el-icon><User /></el-icon>
         <span>账号管理</span>
@@ -29,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { Document, List, Timer, User } from '@element-plus/icons-vue'
+import { Document, List, Timer, User, DataLine } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -37,7 +41,7 @@ const userStore = useUserStore()
 
 <style scoped>
 .sidebar {
-  width: 240px;
+  width: 220px;
   border-right: 1px solid #dcdfe6;
   background-color: #fff;
 }
