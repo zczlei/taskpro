@@ -157,7 +157,7 @@
                 <el-form-item label="任务图片">
                   <el-upload
                     class="task-image-upload"
-                    action="/api/files/upload"
+                    action="http://config.umeweb.cn/prj/api/files/upload"
                     :on-success="handleUploadSuccess"
                     :on-error="handleUploadError"
                     :before-upload="beforeUpload"

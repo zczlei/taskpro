@@ -10,49 +10,41 @@
             </div>
 
             <!-- 数据概览卡片 -->
-            <div class="stats-cards">
-              <el-card class="stats-card">
+            <div class="statistics">
+              <el-card class="stat-card">
                 <template #header>
                   <div class="card-header">
                     <span>需求总量</span>
-                    <el-icon><Document /></el-icon>
                   </div>
                 </template>
-                <div class="card-value">{{ totalRequirements }}</div>
-                <div class="card-desc">所有需求总数</div>
+                <div class="stat-value">{{ totalRequirements }}</div>
               </el-card>
 
-              <el-card class="stats-card">
+              <el-card class="stat-card">
                 <template #header>
                   <div class="card-header">
                     <span>开发中需求</span>
-                    <el-icon><Loading /></el-icon>
                   </div>
                 </template>
-                <div class="card-value">{{ inProgressRequirements }}</div>
-                <div class="card-desc">当前处于开发状态的需求</div>
+                <div class="stat-value">{{ inProgressRequirements }}</div>
               </el-card>
 
-              <el-card class="stats-card">
+              <el-card class="stat-card">
                 <template #header>
                   <div class="card-header">
                     <span>已完成需求</span>
-                    <el-icon><SuccessFilled /></el-icon>
                   </div>
                 </template>
-                <div class="card-value">{{ completedRequirements }}</div>
-                <div class="card-desc">已交付的需求数量</div>
+                <div class="stat-value">{{ completedRequirements }}</div>
               </el-card>
 
-              <el-card class="stats-card">
+              <el-card class="stat-card">
                 <template #header>
                   <div class="card-header">
-                    <span>需求完成率</span>
-                    <el-icon><DataLine /></el-icon>
+                    <span>完成率</span>
                   </div>
                 </template>
-                <div class="card-value">{{ completionRate }}%</div>
-                <div class="card-desc">已完成需求占比</div>
+                <div class="stat-value">{{ completionRate }}%</div>
               </el-card>
             </div>
 
@@ -138,25 +130,39 @@ let statusChart: echarts.ECharts | null = null
 let priorityChart: echarts.ECharts | null = null
 let trendChart: echarts.ECharts | null = null
 
-// 计算总需求数
+// 在组件挂载时加载需求数据
+onMounted(async () => {
+  await projectStore.loadRequirements()
+  
+  // 初始化各个图表
+  initStatusChart()
+  initPriorityChart()
+  initTrendChart()
+  
+  // 添加窗口大小变化的事件监听
+  window.addEventListener('resize', handleResize)
+})
+
+// 需求总量（需求管理 + 需求进度跟踪的总和）
 const totalRequirements = computed(() => {
-  return projectStore.projects.length
+  return projectStore.getTotalRequirements
 })
 
-// 计算开发中需求数
+// 开发中需求数量（需求进度跟踪中状态为"开发中"的需求）
 const inProgressRequirements = computed(() => {
-  return projectStore.projects.filter(p => p.status === 'IN_DEVELOPMENT').length
+  return projectStore.getInProgressCount
 })
 
-// 计算已完成需求数
+// 已完成需求数量（需求进度跟踪中状态为"已完成"的需求）
 const completedRequirements = computed(() => {
-  return projectStore.projects.filter(p => p.status === 'COMPLETED').length
+  return projectStore.getCompletedCount
 })
 
-// 计算需求完成率
+// 完成率
 const completionRate = computed(() => {
-  if (totalRequirements.value === 0) return 0
-  return Math.round((completedRequirements.value / totalRequirements.value) * 100)
+  const total = totalRequirements.value
+  if (total === 0) return 0
+  return Math.round((completedRequirements.value / total) * 100)
 })
 
 // 初始化状态分布图表
@@ -461,23 +467,6 @@ const handleResize = () => {
   priorityChart?.resize()
   trendChart?.resize()
 }
-
-// 组件挂载时加载数据
-onMounted(async () => {
-  try {
-    await projectStore.loadRequirements()
-    
-    // 初始化各个图表
-    initStatusChart()
-    initPriorityChart()
-    initTrendChart()
-    
-    // 添加窗口大小变化的事件监听
-    window.addEventListener('resize', handleResize)
-  } catch (error) {
-    console.error('加载数据失败:', error)
-  }
-})
 </script>
 
 <style scoped>
@@ -536,67 +525,38 @@ onMounted(async () => {
 }
 
 /* 数据卡片样式 */
-.stats-cards {
-  display: flex;
+.statistics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  width: 100%;
+  margin-top: 20px;
 }
 
-.stats-card {
-  flex: 1;
-  text-align: center;
-  min-width: 200px;
+.stat-card {
+  background-color: #fff;
   border-radius: 8px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: none;
-  overflow: hidden;
 }
 
-.stats-card:hover {
+.stat-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.stats-card:nth-child(1) :deep(.el-card__header) {
-  background: linear-gradient(135deg, #36cfc9, #13c2c2);
-  color: white;
-}
-
-.stats-card:nth-child(2) :deep(.el-card__header) {
-  background: linear-gradient(135deg, #faad14, #fa8c16);
-  color: white;
-}
-
-.stats-card:nth-child(3) :deep(.el-card__header) {
-  background: linear-gradient(135deg, #52c41a, #389e0d);
-  color: white;
-}
-
-.stats-card:nth-child(4) :deep(.el-card__header) {
-  background: linear-gradient(135deg, #722ed1, #531dab);
-  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white;
-}
-
-.card-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #1f2f3d;
-  margin: 15px 0;
-}
-
-.card-desc {
-  font-size: 14px;
+  font-size: 16px;
   color: #606266;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #409EFF;
+  text-align: center;
+  margin-top: 10px;
 }
 
 /* 图表样式 */
@@ -631,7 +591,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .stats-cards {
+  .statistics {
     flex-direction: column;
   }
   

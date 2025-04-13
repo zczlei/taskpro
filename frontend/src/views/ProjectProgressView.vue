@@ -155,10 +155,11 @@
               </el-form-item>
               <el-form-item label="开发状态" prop="status">
                 <el-select v-model="editForm.status" style="width: 100%">
-                  <el-option label="开发中" value="IN_DEVELOPMENT" />
+                  <el-option label="方案设计中" value="DESIGN" />
+                  <el-option label="开发中" value="DEVELOPMENT" />
+                  <el-option label="测试中" value="TESTING" />
+                  <el-option label="验收中" value="ACCEPTANCE" />
                   <el-option label="已完成" value="COMPLETED" />
-                  <el-option label="已取消" value="CANCELLED" />
-                  <el-option label="待处理" value="PENDING" />
                 </el-select>
               </el-form-item>
               <el-form-item label="开发人员" prop="developer">
@@ -315,10 +316,11 @@ const displayProjects = computed(() => {
 // 获取状态对应的类型
 const getStatusType = (status: string) => {
   const statusMap = {
-    'IN_DEVELOPMENT': 'warning',
-    'COMPLETED': 'success',
-    'CANCELLED': 'info',
-    'PENDING': 'info'
+    'DESIGN': 'info',
+    'DEVELOPMENT': 'warning',
+    'TESTING': 'warning',
+    'ACCEPTANCE': 'success',
+    'COMPLETED': 'success'
   }
   return statusMap[status] || 'info'
 }
@@ -336,10 +338,11 @@ const getPriorityType = (priority: string) => {
 // 获取状态显示文本
 const getStatusText = (status: string) => {
   const statusMap = {
-    'IN_DEVELOPMENT': '开发中',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消',
-    'PENDING': '待处理'
+    'DESIGN': '方案设计中',
+    'DEVELOPMENT': '开发中',
+    'TESTING': '测试中',
+    'ACCEPTANCE': '验收中',
+    'COMPLETED': '已完成'
   }
   return statusMap[status] || status
 }

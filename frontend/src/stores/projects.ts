@@ -68,6 +68,21 @@ export const useProjectStore = defineStore('projects', () => {
     return nonPending
   })
 
+  // 获取需求总量（需求管理 + 需求进度跟踪）
+  const getTotalRequirements = computed(() => {
+    return projects.value.length
+  })
+
+  // 获取开发中的需求数量（需求进度跟踪中状态为"开发中"的需求）
+  const getInProgressCount = computed(() => {
+    return projects.value.filter(p => p.status === 'IN_DEVELOPMENT').length
+  })
+
+  // 获取已完成的需求数量（需求进度跟踪中状态为"已完成"的需求）
+  const getCompletedCount = computed(() => {
+    return projects.value.filter(p => p.status === 'COMPLETED').length
+  })
+
   // 开始开发项目
   const startDevelopment = async (project: Project) => {
     try {
@@ -176,6 +191,9 @@ export const useProjectStore = defineStore('projects', () => {
     getRequirements,
     getInDevelopment,
     getNonPendingRequirements,
+    getTotalRequirements,
+    getInProgressCount,
+    getCompletedCount,
     startDevelopment,
     addProject,
     updateProject,

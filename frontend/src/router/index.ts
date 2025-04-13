@@ -5,6 +5,7 @@ import AccountView from '../views/AccountView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProjectProgressView from '@/views/ProjectProgressView.vue'
 import RequirementManagementView from '@/views/RequirementManagementView.vue'
+import DashboardView from '@/views/DashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -72,6 +73,12 @@ const router = createRouter({
       path: '/progress',
       name: 'progress',
       component: ProjectProgressView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: DashboardView,
       meta: { requiresAuth: true }
     },
   ],

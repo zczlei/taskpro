@@ -487,7 +487,7 @@ onMounted(() => {
             
             <!-- 字段配置对话框 -->
             <FieldConfig
-              v-model:visible="fieldConfigVisible"
+              v-model="fieldConfigVisible"
               :fields="formFields"
               @save="handleFieldConfigSave"
             />
