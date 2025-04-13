@@ -6,7 +6,7 @@ import { ElMessage } from 'element-plus'
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // 后端API地址
+  baseURL: 'http://config.umeweb.cn/prj', // 后端API地址
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
